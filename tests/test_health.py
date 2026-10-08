@@ -1,10 +1,4 @@
-from fastapi.testclient import TestClient
-from cognitive_assistant.app import create_app
-
-client = TestClient(create_app())
-
-
-def test_health_check_returns_200_and_ok_status():
+def test_health_check_returns_200_and_ok_status(client):
     """Verifica que GET /health responda 200 con la estructura del núcleo."""
     response = client.get("/health")
     assert response.status_code == 200
@@ -16,7 +10,7 @@ def test_health_check_returns_200_and_ok_status():
     assert data["version"] == "0.1.0"
 
 
-def test_health_check_trace_id_in_header():
+def test_health_check_trace_id_in_header(client):
     """Verifica que la respuesta de /health incluya la cabecera X-Trace-ID."""
     response = client.get("/health")
     assert response.status_code == 200

@@ -25,23 +25,22 @@ class MemoryService:
             self._init_mem0()
 
     def _init_mem0(self) -> None:
-        """Intenta inicializar mem0.Memory."""
+        """Intenta inicializar mem0.Memory solo si hay API key configurada."""
+        if not settings.llm_api_key:
+            logger.debug("Sin llm_api_key configurada; usando almacén local de memoria persistente.")
+            self._mem0_instance = None
+            return
+
         try:
             from mem0 import Memory
-            # Si hay configuración explícita o API key para embeddings
-            if settings.llm_api_key:
-                config = {
-                    "llm": {
-                        "provider": "litellm",
-                        "config": {"model": settings.default_llm_model, "api_key": settings.llm_api_key},
-                    }
+            config = {
+                "llm": {
+                    "provider": "litellm",
+                    "config": {"model": settings.default_llm_model, "api_key": settings.llm_api_key},
                 }
-                self._mem0_instance = Memory.from_config(config)
-                logger.info("mem0.Memory inicializado con configuración LiteLLM.")
-            else:
-                # Intentar instanciación por defecto
-                self._mem0_instance = Memory()
-                logger.info("mem0.Memory inicializado con configuración por defecto.")
+            }
+            self._mem0_instance = Memory.from_config(config)
+            logger.info("mem0.Memory inicializado con configuración LiteLLM.")
         except Exception as exc:
             logger.warning(
                 "No fue posible inicializar mem0.Memory (%s); activando almacén de memoria local.",

@@ -1,7 +1,5 @@
 import json
 import logging
-from fastapi.testclient import TestClient
-from cognitive_assistant.app import create_app
 from cognitive_assistant.shared.telemetry.logging import JsonFormatter
 from cognitive_assistant.shared.telemetry.trace import (
     generate_trace_id,
@@ -9,10 +7,8 @@ from cognitive_assistant.shared.telemetry.trace import (
     set_trace_id,
 )
 
-client = TestClient(create_app())
 
-
-def test_unique_trace_id_per_request():
+def test_unique_trace_id_per_request(client):
     """Cada request sin header previo debe generar un trace_id único."""
     response_1 = client.get("/health")
     response_2 = client.get("/health")
@@ -25,7 +21,7 @@ def test_unique_trace_id_per_request():
     assert trace_1 != trace_2
 
 
-def test_propagates_custom_trace_id():
+def test_propagates_custom_trace_id(client):
     """Si el cliente envía un X-Trace-ID existente, debe respetarse y propagarse."""
     custom_trace = "custom-trace-uuid-12345"
     response = client.get("/health", headers={"X-Trace-ID": custom_trace})
@@ -60,7 +56,7 @@ def test_trace_id_in_json_log():
         reset_trace_id(token)
 
 
-def test_reception_message_trace_propagation():
+def test_reception_message_trace_propagation(client):
     """Verifica la trazabilidad en la ruta de recepción C2 -> C8."""
     custom_trace = "reception-trace-777"
     response = client.post(

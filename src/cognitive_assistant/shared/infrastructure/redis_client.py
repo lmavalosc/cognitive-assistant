@@ -56,6 +56,19 @@ def get_redis_client() -> aioredis.Redis:
     return _redis_client
 
 
+async def close_redis_client() -> None:
+    """Cierra limpiamente la conexión y el pool del cliente Redis."""
+    global _redis_client, _redis_client_loop
+    if _redis_client is not None:
+        try:
+            await _redis_client.aclose()
+        except Exception as exc:
+            logger.debug("Error cerrando cliente Redis: %s", exc)
+        finally:
+            _redis_client = None
+            _redis_client_loop = None
+
+
 async def check_redis_health() -> bool:
     """Verifica si el servicio Redis está activo y responde a PING."""
     try:
@@ -64,6 +77,9 @@ async def check_redis_health() -> bool:
         return bool(pong)
     except Exception as exc:
         logger.warning("Fallo en health check de Redis: %s", exc)
+        global _redis_client, _redis_client_loop
+        _redis_client = None
+        _redis_client_loop = None
         return False
 
 

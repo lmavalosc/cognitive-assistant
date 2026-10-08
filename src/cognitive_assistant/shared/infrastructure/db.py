@@ -12,15 +12,28 @@ from sqlalchemy.ext.asyncio import (
 from cognitive_assistant.settings import settings
 from cognitive_assistant.shared.infrastructure.models import Base
 
+import asyncio
 logger = logging.getLogger(__name__)
 
 _async_engine: Optional[AsyncEngine] = None
+_async_engine_loop: Optional[asyncio.AbstractEventLoop] = None
 _async_session_factory: Optional[async_sessionmaker[AsyncSession]] = None
 
 
 def get_async_engine() -> AsyncEngine:
-    """Devuelve el motor SQLAlchemy 2.0 Async configurado."""
-    global _async_engine
+    """Devuelve el motor SQLAlchemy 2.0 Async configurado, adaptándose al event loop activo."""
+    global _async_engine, _async_engine_loop, _async_session_factory
+    current_loop = None
+    try:
+        current_loop = asyncio.get_running_loop()
+    except RuntimeError:
+        pass
+
+    # Si el motor previo fue creado en un event loop distinto, descartar para evitar conexiones huérfanas
+    if _async_engine is not None and _async_engine_loop is not None and current_loop is not None and _async_engine_loop != current_loop:
+        _async_engine = None
+        _async_session_factory = None
+
     if _async_engine is None:
         db_url = settings.async_postgres_url
         logger.info("Inicializando AsyncEngine con URL: %s@%s:%s/%s", 
@@ -33,7 +46,22 @@ def get_async_engine() -> AsyncEngine:
             max_overflow=20,
             connect_args={"timeout": 5},
         )
+        _async_engine_loop = current_loop
     return _async_engine
+
+
+async def dispose_db_engine() -> None:
+    """Cierra y libera limpiamente el motor y el pool de conexiones asyncpg."""
+    global _async_engine, _async_session_factory, _async_engine_loop
+    if _async_engine is not None:
+        try:
+            await _async_engine.dispose()
+        except Exception as exc:
+            logger.debug("Error al liberar AsyncEngine: %s", exc)
+        finally:
+            _async_engine = None
+            _async_session_factory = None
+            _async_engine_loop = None
 
 
 def get_session_factory() -> async_sessionmaker[AsyncSession]:
