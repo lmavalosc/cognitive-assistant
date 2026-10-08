@@ -1,53 +1,57 @@
 import uuid
-from contextvars import ContextVar, Token
+from contextvars import ContextVar
 from typing import Callable
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.requests import Request
 from starlette.responses import Response
 
-TRACE_HEADER = "X-Trace-ID"
-_trace_id_ctx: ContextVar[str] = ContextVar("trace_id", default="-")
+trace_id_ctx: ContextVar[str | None] = ContextVar(
+    "trace_id",
+    default=None,
+)
 
 
 def generate_trace_id() -> str:
-    """Genera un identificador único de trazabilidad (UUID4 hex de 32 caracteres)."""
-    return uuid.uuid4().hex
+    """Genera un identificador único UUID4."""
+    return str(uuid.uuid4())
 
 
 def get_trace_id() -> str:
-    """Obtiene el trace_id del contexto de ejecución actual."""
-    return _trace_id_ctx.get()
+    """Obtiene el trace_id del contexto actual, generando uno si no existe."""
+    trace_id = trace_id_ctx.get()
+    if trace_id is None:
+        trace_id = generate_trace_id()
+        trace_id_ctx.set(trace_id)
+    return trace_id
 
 
-def set_trace_id(trace_id: str) -> Token[str]:
-    """Establece el trace_id en el contexto actual."""
-    return _trace_id_ctx.set(trace_id)
+def set_trace_id(trace_id: str):
+    """Establece el trace_id en el contexto."""
+    return trace_id_ctx.set(trace_id)
 
 
-def reset_trace_id(token: Token[str]) -> None:
-    """Restaura el trace_id del contexto al token previo."""
-    _trace_id_ctx.reset(token)
+def reset_trace_id(token) -> None:
+    """Restaura el trace_id previo."""
+    trace_id_ctx.reset(token)
 
 
-class TraceMiddleware(BaseHTTPMiddleware):
-    """
-    Middleware HTTP que asegura que cada petición tenga un trace_id:
-    - Extrae X-Trace-ID del encabezado entrante si existe.
-    - Genera uno nuevo si no está presente.
-    - Lo propaga en el ContextVar para logging.
-    - Lo inyecta en el encabezado de respuesta HTTP (X-Trace-ID).
-    """
+class TraceIDMiddleware(BaseHTTPMiddleware):
+    """Middleware HTTP para extraer o generar y propagar X-Trace-ID."""
 
     async def dispatch(self, request: Request, call_next: Callable) -> Response:
-        incoming_trace_id = request.headers.get("x-trace-id") or request.headers.get("x-request-id")
-        trace_id = incoming_trace_id.strip() if incoming_trace_id else generate_trace_id()
+        incoming_trace_id = request.headers.get("X-Trace-ID")
+        trace_id = incoming_trace_id or generate_trace_id()
 
-        token = set_trace_id(trace_id)
+        token = trace_id_ctx.set(trace_id)
         request.state.trace_id = trace_id
 
         try:
-            response = await call_next(request)
-            response.headers[TRACE_HEADER] = trace_id
+            response: Response = await call_next(request)
+            response.headers["X-Trace-ID"] = trace_id
             return response
         finally:
-            reset_trace_id(token)
+            trace_id_ctx.reset(token)
+
+
+# Alias de compatibilidad
+TraceMiddleware = TraceIDMiddleware

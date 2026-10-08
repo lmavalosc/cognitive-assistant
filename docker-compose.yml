@@ -1,47 +1,30 @@
 services:
   api:
-    build:
-      context: .
-      dockerfile: Dockerfile
+    build: .
     container_name: cognitive_assistant_api
-    restart: unless-stopped
     ports:
       - "8000:8000"
-    environment:
-      - APP_NAME=Cognitive Assistant
-      - APP_ENV=development
-      - DEBUG=true
-      - HOST=0.0.0.0
-      - PORT=8000
-      - LOG_LEVEL=INFO
-      - POSTGRES_HOST=postgres
-      - POSTGRES_PORT=5432
-      - POSTGRES_DB=cognitive_assistant
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres_dev_password
-      - REDIS_HOST=redis
-      - REDIS_PORT=6379
-      - REDIS_PASSWORD=
+    env_file:
+      - .env
     depends_on:
       postgres:
         condition: service_healthy
       redis:
-        condition: service_healthy
+        condition: service_started
 
   postgres:
     image: postgres:16-alpine
     container_name: cognitive_assistant_postgres
-    restart: unless-stopped
     environment:
-      POSTGRES_DB: cognitive_assistant
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgres_dev_password
+      POSTGRES_DB: nucleo_cognitivo
+      POSTGRES_USER: nucleo
+      POSTGRES_PASSWORD: nucleo
     ports:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres -d cognitive_assistant"]
+      test: ["CMD-SHELL", "pg_isready -U nucleo -d nucleo_cognitivo"]
       interval: 5s
       timeout: 5s
       retries: 5
@@ -49,16 +32,10 @@ services:
   redis:
     image: redis:7-alpine
     container_name: cognitive_assistant_redis
-    restart: unless-stopped
     ports:
       - "6379:6379"
     volumes:
       - redis_data:/data
-    healthcheck:
-      test: ["CMD", "redis-cli", "ping"]
-      interval: 5s
-      timeout: 5s
-      retries: 5
 
 volumes:
   postgres_data:

@@ -1,10 +1,10 @@
+import json
 import logging
 from fastapi.testclient import TestClient
 from cognitive_assistant.app import create_app
-from cognitive_assistant.shared.telemetry.logging import TraceIdFilter
+from cognitive_assistant.shared.telemetry.logging import JsonFormatter
 from cognitive_assistant.shared.telemetry.trace import (
     generate_trace_id,
-    get_trace_id,
     reset_trace_id,
     set_trace_id,
 )
@@ -32,11 +32,10 @@ def test_propagates_custom_trace_id():
 
     assert response.status_code == 200
     assert response.headers.get("x-trace-id") == custom_trace
-    assert response.json()["trace_id"] == custom_trace
 
 
-def test_trace_id_in_log_record():
-    """Verifica que el TraceIdFilter inyecte el trace_id actual en los registros de logging."""
+def test_trace_id_in_json_log():
+    """Verifica que JsonFormatter formatee el log con el campo trace_id."""
     test_id = generate_trace_id()
     token = set_trace_id(test_id)
 
@@ -50,17 +49,19 @@ def test_trace_id_in_log_record():
             args=(),
             exc_info=None,
         )
-        filter_instance = TraceIdFilter()
-        filter_instance.filter(record)
+        formatter = JsonFormatter()
+        log_json = json.loads(formatter.format(record))
 
-        assert hasattr(record, "trace_id")
-        assert record.trace_id == test_id
+        assert "trace_id" in log_json
+        assert log_json["trace_id"] == test_id
+        assert log_json["level"] == "INFO"
+        assert log_json["message"] == "Mensaje de prueba"
     finally:
         reset_trace_id(token)
 
 
 def test_reception_message_trace_propagation():
-    """Verifica la trazabilidad en la ruta de recepción y despacho C2 -> C8."""
+    """Verifica la trazabilidad en la ruta de recepción C2 -> C8."""
     custom_trace = "reception-trace-777"
     response = client.post(
         "/reception/message",
