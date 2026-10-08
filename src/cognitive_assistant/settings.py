@@ -7,13 +7,13 @@ class Settings(BaseSettings):
     api_host: str = "0.0.0.0"
     api_port: int = 8000
 
-    postgres_host: str = "postgres"
-    postgres_port: int = 5432
+    postgres_host: str = "localhost"
+    postgres_port: int = 5433
     postgres_db: str = "nucleo_cognitivo"
     postgres_user: str = "nucleo"
     postgres_password: str = "nucleo"
 
-    redis_host: str = "redis"
+    redis_host: str = "localhost"
     redis_port: int = 6379
 
     log_level: str = "INFO"
@@ -42,6 +42,10 @@ class Settings(BaseSettings):
     @property
     def postgres_url(self) -> str:
         return f"postgresql://{self.postgres_user}:{self.postgres_password}@{self.postgres_host}:{self.postgres_port}/{self.postgres_db}"
+
+    @property
+    def async_postgres_url(self) -> str:
+        return f"postgresql+asyncpg://{self.postgres_user}:{self.postgres_password}@{self.postgres_host}:{self.postgres_port}/{self.postgres_db}"
 
     @property
     def redis_url(self) -> str:

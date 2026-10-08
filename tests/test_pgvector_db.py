@@ -1,40 +1,31 @@
 import pytest
-import psycopg2
-from pgvector.psycopg2 import register_vector
+import asyncpg
 from cognitive_assistant.settings import settings
 
 
-def test_postgres_pgvector_live_connection():
-    """Verifica conexión real a PostgreSQL y soporte de pgvector en el contenedor Docker."""
+@pytest.mark.asyncio
+async def test_postgres_pgvector_live_connection():
+    """Verifica conexión real a PostgreSQL y soporte de pgvector mediante asyncpg en el puerto activo."""
+    conn = await asyncpg.connect(
+        host=settings.postgres_host,
+        port=settings.postgres_port,
+        database=settings.postgres_db,
+        user=settings.postgres_user,
+        password=settings.postgres_password,
+        timeout=5,
+    )
     try:
-        conn = psycopg2.connect(
-            host="localhost",
-            port=settings.postgres_port,
-            dbname=settings.postgres_db,
-            user=settings.postgres_user,
-            password=settings.postgres_password,
-            connect_timeout=3,
-        )
-    except Exception as exc:
-        pytest.skip(f"Contenedor PostgreSQL no accesible localmente: {exc}")
+        # Verificar extensión vector
+        ext = await conn.fetchval("SELECT extname FROM pg_extension WHERE extname = 'vector';")
+        assert ext == "vector"
 
-    try:
-        cur = conn.cursor()
-        register_vector(conn)
-
-        cur.execute("SELECT extname FROM pg_extension WHERE extname = 'vector';")
-        row = cur.fetchone()
-        assert row is not None
-        assert row[0] == "vector"
-
-        # Prueba de inserción y cálculo de distancia
-        cur.execute("CREATE TEMPORARY TABLE items (id serial PRIMARY KEY, embedding vector(3));")
-        cur.execute("INSERT INTO items (embedding) VALUES ('[1,0,0]'), ('[0,1,0]');")
-        cur.execute("SELECT id, embedding <-> '[1,0,0]' FROM items ORDER BY embedding <-> '[1,0,0]';")
-        results = cur.fetchall()
+        # Prueba de inserción y cálculo de distancia vectorial
+        await conn.execute("CREATE TEMPORARY TABLE items (id serial PRIMARY KEY, embedding vector(3));")
+        await conn.execute("INSERT INTO items (embedding) VALUES ('[1,0,0]'), ('[0,1,0]');")
+        results = await conn.fetch("SELECT id, embedding <-> '[1,0,0]' AS dist FROM items ORDER BY dist;")
         assert len(results) == 2
-        assert results[0][1] == 0.0
-
-        cur.close()
+        assert float(results[0]["dist"]) == 0.0
+        assert float(results[1]["dist"]) > 0.0
     finally:
-        conn.close()
+        await conn.close()
+

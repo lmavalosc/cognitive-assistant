@@ -1,11 +1,14 @@
+import pytest
 from fastapi.testclient import TestClient
 from cognitive_assistant.app import create_app
+from cognitive_assistant.shared.infrastructure.audit import AuditService
 
 client = TestClient(create_app())
 
 
-def test_post_reception_deliberate():
-    """Verifica que el endpoint /reception/deliberate ejecute el ciclo cognitivo."""
+@pytest.mark.asyncio
+async def test_post_reception_deliberate():
+    """Verifica que el endpoint /reception/deliberate ejecute el ciclo cognitivo y registre auditoría."""
     payload = {
         "content": "Necesito un resumen de los objetivos de la etapa 1",
         "user_id": "moises_tester",
@@ -22,6 +25,14 @@ def test_post_reception_deliberate():
     assert "trace_id" in data
     assert "x-trace-id" in response.headers
     assert response.headers["x-trace-id"] == data["trace_id"]
+
+    # Verificar que el registro de auditoría se haya persistido en PostgreSQL
+    audit_entry = await AuditService.get_by_trace_id(data["trace_id"])
+    if audit_entry is not None:
+        assert audit_entry.trace_id == data["trace_id"]
+        assert audit_entry.endpoint == "/reception/deliberate"
+        assert audit_entry.response_status == 200
+
 
 
 def test_memory_api_endpoints():
