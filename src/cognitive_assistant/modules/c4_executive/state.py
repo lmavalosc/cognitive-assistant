@@ -8,10 +8,14 @@ class CognitiveState(TypedDict):
 
     trace_id: str
     user_id: str
+    session_id: str
     input_message: str
     context_memories: List[str]
+    dialogue_history: List[Dict[str, str]]
+    active_goal: Optional[str]
     intent: str
     plan: List[str]
     response: str
     status: str
     metadata: Dict[str, Any]
+

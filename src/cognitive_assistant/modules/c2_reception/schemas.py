@@ -33,6 +33,7 @@ class DeliberateRequest(BaseModel):
 
     content: str = Field(..., min_length=1, description="Estímulo o mensaje de entrada a procesar")
     user_id: str = Field(default="default_user", description="Identificador del usuario")
+    session_id: str = Field(default="default_session", description="Identificador de la sesión para memoria de trabajo en Redis")
     metadata: Dict[str, Any] = Field(default_factory=dict, description="Metadatos de contexto")
 
 
@@ -41,6 +42,7 @@ class DeliberateResponse(BaseModel):
 
     status: str = Field(default="completed", description="Estado de la deliberación")
     trace_id: str = Field(..., description="Trace ID del ciclo cognitivo")
+    session_id: str = Field(default="default_session", description="Identificador de la sesión conversacional")
     response: str = Field(..., description="Respuesta final generada por el asistente")
     plan: list[str] = Field(default_factory=list, description="Plan cognitivo formulado por LangGraph")
     context_memories: list[str] = Field(default_factory=list, description="Recuerdos recuperados desde mem0")

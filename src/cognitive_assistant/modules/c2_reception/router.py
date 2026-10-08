@@ -95,6 +95,7 @@ async def deliberate_message(payload: DeliberateRequest) -> DeliberateResponse:
     final_state = await execute_cognitive_cycle(
         message=payload.content,
         user_id=payload.user_id,
+        session_id=payload.session_id,
         metadata=payload.metadata,
     )
 
@@ -105,6 +106,7 @@ async def deliberate_message(payload: DeliberateRequest) -> DeliberateResponse:
             "response": final_state.get("response", ""),
             "plan": final_state.get("plan", []),
             "user_id": payload.user_id,
+            "session_id": payload.session_id,
         },
     )
 
@@ -116,12 +118,14 @@ async def deliberate_message(payload: DeliberateRequest) -> DeliberateResponse:
         status=status.HTTP_200_OK,
         duration_ms=round(duration_ms, 2),
         summary=payload.content,
+        session_id=payload.session_id,
         metadata={"user_id": payload.user_id, "plan_steps": len(final_state.get("plan", []))},
     )
 
     return DeliberateResponse(
         status=final_state.get("status", "completed"),
         trace_id=current_trace,
+        session_id=payload.session_id,
         response=final_state.get("response", ""),
         plan=final_state.get("plan", []),
         context_memories=final_state.get("context_memories", []),
