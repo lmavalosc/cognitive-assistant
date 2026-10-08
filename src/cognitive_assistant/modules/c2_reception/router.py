@@ -1,0 +1,62 @@
+from fastapi import APIRouter, Depends, status
+from cognitive_assistant import __version__
+from cognitive_assistant.modules.c2_reception.schemas import (
+    HealthResponse,
+    ReceptionMessageRequest,
+    ReceptionMessageResponse,
+)
+from cognitive_assistant.modules.c8_effectors.dispatcher import EffectorDispatcher
+from cognitive_assistant.settings import Settings, get_settings
+from cognitive_assistant.shared.telemetry.logging import get_logger
+from cognitive_assistant.shared.telemetry.trace import get_trace_id
+
+router = APIRouter(prefix="", tags=["Recepción & Núcleo"])
+logger = get_logger("cognitive_assistant.reception")
+
+
+@router.get(
+    "/health",
+    response_model=HealthResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Verificación del estado de salud del sistema",
+)
+async def health_check(settings: Settings = Depends(get_settings)) -> HealthResponse:
+    """
+    Endpoint de health check:
+    Retorna estado 'ok', nombre de la app, versión y el trace_id activo.
+    """
+    current_trace = get_trace_id()
+    logger.info("Health check ejecutado satisfactoriamente")
+    return HealthResponse(
+        status="ok",
+        app=settings.app_name,
+        version=__version__,
+        trace_id=current_trace,
+    )
+
+
+@router.post(
+    "/reception/message",
+    response_model=ReceptionMessageResponse,
+    status_code=status.HTTP_202_ACCEPTED,
+    summary="Recepción transaccional de mensajes",
+)
+async def receive_message(payload: ReceptionMessageRequest) -> ReceptionMessageResponse:
+    """
+    Recibe un mensaje en C2 y lo canaliza hacia C8 Efectores con trazabilidad unificada.
+    """
+    current_trace = get_trace_id()
+    logger.info("Mensaje recibido en C2: origen='%s'", payload.source)
+
+    dispatcher = EffectorDispatcher()
+    dispatch_result = await dispatcher.dispatch(
+        event_type="reception.message",
+        payload={"content": payload.content, "source": payload.source, "meta": payload.metadata},
+    )
+
+    return ReceptionMessageResponse(
+        status="accepted",
+        trace_id=current_trace,
+        dispatched=True,
+        details=dispatch_result,
+    )
