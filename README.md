@@ -30,6 +30,9 @@ cognitive-assistant/
 ├── docker-compose.yml
 ├── Dockerfile
 │
+├── INFORMES/
+│   └── INFORME_AVANCE_DIA_1.md
+│
 ├── src/
 │   └── cognitive_assistant/
 │       ├── __init__.py

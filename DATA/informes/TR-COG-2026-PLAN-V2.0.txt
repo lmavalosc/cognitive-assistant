@@ -1,0 +1,303 @@
+
+
+INFORME 2: ESPECIFICACIÓN DE INGENIERÍA, PLAN DE CONSTRUCCIÓN Y EVALUACIÓN
+
+
+================================================================================
+INFORME TÉCNICO II: ESPECIFICACIÓN DE INGENIERÍA Y PLAN DE IMPLEMENTACIÓN
+SISTEMA COGNITIVO BASADO EN ESTRATEGIA CONSTRUCTIVA "CORE-TO-PERIPHERY"
+================================================================================
+
+DOCUMENTO ID:       TR-COG-2026-PLAN-V2.0
+VERSIÓN:            2.0 Definitiva y Consolidada
+FECHA:              07 de Octubre de 2026
+TIPO DE DOCUMENTO:  Plan de Ingeniería, Implementación y Protocolo Experimental
+APLICACIÓN:         Tesis de Grado / Desarrollo de Software Empresarial
+ESTADO:             Aprobado para Implementación
+TAXONOMÍA BASE:     8 Capas Funcionales Verticales + 3 Planos Transversales
+
+================================================================================
+1. RESUMEN EJECUTIVO
+================================================================================
+
+El presente documento define el plan constructivo, la arquitectura de código y 
+el protocolo de validación empírica para el Asistente Cognitivo Modular.
+
+Para eliminar el riesgo común de desarrollar módulos aislados incapaces de integrarse, 
+el proyecto adopta la estrategia constructiva "Core-to-Periphery" (del núcleo hacia 
+la periferia). Este modelo garantiza que desde la primera iteración exista un 
+sistema operativo mínimo (núcleo transaccional de entrada/salida) sobre el cual se 
+agregan de forma progresiva las capacidades de memoria, percepción, planificación, 
+gobernanza, aislamiento y consolidación asíncrona.
+
+El plan comprende:
+- 8 etapas constructivas secuenciales completamente alineadas con las 8 capas del sistema.
+- Una arquitectura de repositorio basada en un Monolito Modular Hexagonal en Python.
+- Un cronograma de 12 semanas con entregables de código y documentación académica.
+- Un protocolo de evaluación experimental compuesto por 7 escenarios de prueba.
+
+================================================================================
+2. PRINCIPIOS DE INGENIERÍA APLICADOS
+================================================================================
+
+1. Construcción Incremental Funcional: En cada etapa el sistema se mantiene ejecutable, 
+   verificable y testeable de extremo a extremo.
+2. Observabilidad de Día Cero: Inyección del identificador de traza universal (trace_id) 
+   desde la Etapa 1 para auditoría de todos los eventos.
+3. Aislamiento Físico y de Privilegios: Ejecución confinada en contenedores efímeros 
+   Docker SDK para mitigar vulnerabilidades derivadas del uso de herramientas.
+4. Desacoplamiento por Mocks: Uso de simuladores y emuladores para cualquier 
+   dependencia de hardware volátil o externa.
+
+================================================================================
+3. PLAN DE CONSTRUCCIÓN INCREMENTAL "CORE-TO-PERIPHERY" (8 ETAPAS)
+================================================================================
+
+--------------------------------------------------------------------------------
+ETAPA 1: EL NÚCLEO TRANSACCIONAL (Tronco Encefálico)
+--------------------------------------------------------------------------------
+- Objetivo: Establecer el canal de entrada/salida base, el contenedor inicial y la 
+  inyección de telemetría distribuida.
+- Capas y Planos: Capa 2 (Recepción), Capa 8 (Efectores), Plano A (Infra), Plano B (Logs).
+- Componentes Técnicos a Desarrollar:
+  * docker-compose con PostgreSQL 16, Redis 7 y contenedor base FastAPI.
+  * Endpoint HTTP POST /api/v1/chat con validación de esquemas JSON.
+  * Middleware de telemetría: inyección de trace_id único (UUIDv4) por transacción.
+  * Efector básico de tipo eco con registro de metadatos en tabla de auditoría.
+- Hito Demostrable / Aceptación:
+  * Traza cURL/Postman confirmando retorno HTTP 200 con trace_id persistido en base de datos.
+
+--------------------------------------------------------------------------------
+ETAPA 2: LA MEMORIA DE TRABAJO (Sistema Nervioso Central)
+--------------------------------------------------------------------------------
+- Objetivo: Incorporar estado conversacional inmediato e inferencia de lenguaje.
+- Capas y Planos: Capa 4 (Memoria de Trabajo), Plano A (Motor LLM).
+- Componentes Técnicos a Desarrollar:
+  * Conector Redis con esquema JSON indexado por session_id.
+  * Ventana deslizante de contexto (últimos 5 turnos conversacionales).
+  * Inferencia de LLM (vía Ollama o API externa) condicionada por el contexto volátil.
+- Hito Demostrable / Aceptación:
+  * Prueba de retención conversacional: el sistema recuerda entidades y parámetros 
+    del mensaje anterior sin re-especificarlos.
+
+--------------------------------------------------------------------------------
+ETAPA 3: LA PERCEPCIÓN Y EL FILTRO COGNITIVO (Los Sentidos)
+--------------------------------------------------------------------------------
+- Objetivo: Procesar estímulos multicanal y clasificar atención temprana.
+- Capas y Planos: Capa 1 (Percepción Sensorial y Atención).
+- Componentes Técnicos a Desarrollar:
+  * Adaptadores de canal independientes (Telegram Bot / WebSocket cliente).
+  * Clasificador de atención con salida estructurada: extracción determinista de 
+    intención, urgencia [0.0 - 1.0], relevancia y señal afectiva.
+- Hito Demostrable / Aceptación:
+  * Matriz de clasificación de 20 casos de prueba (consultas, comandos, saludos) 
+    con precisión >= 90%.
+
+--------------------------------------------------------------------------------
+ETAPA 4: LA CORTEZA PREFRONTAL (Ejecutivo, Planner y Orquestación)
+--------------------------------------------------------------------------------
+- Objetivo: Desacoplar la recepción del procesamiento mediante planes acíclicos y agentes.
+- Capas y Planos: Capa 4 (Ejecutivo / Planner), Capa 6 (Agentes Especializados).
+- Componentes Técnicos a Desarrollar:
+  * Módulo Planner: generador de CognitivePlan estructurado en JSON.
+  * Agente Investigador (búsqueda y síntesis) y Agente Redactor (formato final).
+  * Orquestador secuencial que canaliza salidas entre agentes coordinados.
+- Hito Demostrable / Aceptación:
+  * Diagrama de secuencia en OpenTelemetry que evidencie la descomposición de una 
+    solicitud en un plan de dos fases orquestadas.
+
+--------------------------------------------------------------------------------
+ETAPA 5: EL SISTEMA INMUNOLÓGICO (Gobernanza y Salvaguardas)
+--------------------------------------------------------------------------------
+- Objetivo: Implementar control de accesos, mitigación de riesgos y defensa ética.
+- Capas y Planos: Capa 3 (Gobernanza, Identidad y Control de Riesgos).
+- Componentes Técnicos a Desarrollar:
+  * Motor de políticas declarativo en base de datos/YAML con control RBAC/ABAC.
+  * Clasificador heurístico y semántico anti-Prompt Injection.
+  * Flujo de suspensión "needs_confirmation" para operaciones de impacto elevado.
+- Hito Demostrable / Aceptación:
+  * Batería de 10 vectores de jailbreak/órdenes destructivas bloqueados con 100% 
+    de efectividad y registrados en auditoría.
+
+--------------------------------------------------------------------------------
+ETAPA 6: LAS EXTREMIDADES (Herramientas Confinadas y Sandbox Docker)
+--------------------------------------------------------------------------------
+- Objetivo: Conceder capacidad efectora segura sobre el entorno sin exponer el host.
+- Capas y Planos: Capa 7 (Herramientas y Sandboxing Confinado).
+- Componentes Técnicos a Desarrollar:
+  * Tool Registry estandarizado compatible con Model Context Protocol (MCP).
+  * Ejecutor Docker SDK: contenedores efímeros sin acceso a red y recursos topados.
+  * Mock de actuadores (servidor FastAPI simulando APIs domóticas o IoT).
+- Hito Demostrable / Aceptación:
+  * Ejecución exitosa de un script generado por un agente dentro de un contenedor 
+    aislado, con interrupción por timeout y sin impacto en el servidor host.
+
+--------------------------------------------------------------------------------
+ETAPA 7: EL HIPOCAMPO (Memorias Persistentes de Largo Plazo y RAG)
+--------------------------------------------------------------------------------
+- Objetivo: Dotar al sistema de memoria histórica episódica y dominio técnico semántico.
+- Capas y Planos: Capa 5 (Memorias Persistentes: Episódica, Semántica y Usuario).
+- Componentes Técnicos a Desarrollar:
+  * Tabla de Episodios en PostgreSQL con serialización de turnos completados.
+  * Base vectorial en PostgreSQL con pgvector e índice HNSW para RAG documental.
+- Hito Demostrable / Aceptación:
+  * Respuesta técnica documentada citando fragmentos de PDFs indexados, correlacionada 
+    con recuerdos de interacciones de días anteriores.
+
+--------------------------------------------------------------------------------
+ETAPA 8: EL SUBCONSCIENTE (Consolidación Offline y Aprendizaje Continuo)
+--------------------------------------------------------------------------------
+- Objetivo: Habilitar la evolución del asistente mediante procesamiento batch asíncrono.
+- Capas y Planos: Plano C (Aprendizaje Offline / Asíncrono), Capa 5 (Perfil de Usuario).
+- Componentes Técnicos a Desarrollar:
+  * Cronjob nocturno (Celery/Cron) para procesar los episodios cerrados del día.
+  * Algoritmo de extracción de patrones para mutación dinámica de user_profile.
+  * Políticas de decaimiento y olvido de información irrelevante o transitoria.
+- Hito Demostrable / Aceptación:
+  * Comparación empírica demostrando adaptación observable al tono y directivas del 
+    usuario en turnos subsiguientes sin reentrenamiento de pesos.
+
+================================================================================
+4. ARQUITECTURA DE REPOSITORIO (MONOLITO MODULAR HEXAGONAL)
+================================================================================
+
+tesis-asistente-cognitivo/
+├── README.md
+├── pyproject.toml
+├── Makefile
+├── docker-compose.yml
+├── .env.example
+│
+├── docs/                               # Documentación Formal y ADRs
+│   ├── anteproyecto.md
+│   ├── arquitectura_8_capas.md
+│   ├── adr/
+│   │   ├── 001_monolito_modular.md
+│   │   ├── 002_postgres_pgvector.md
+│   │   ├── 003_redis_memoria_trabajo.md
+│   │   ├── 004_docker_sandbox.md
+│   │   └── 005_opentelemetry_auditoria.md
+│   └── diagramas/
+│       ├── flujo_cognitivo.mmd
+│       └── arquitectura_global.mmd
+│
+├── infra/                              # Configuración de Despliegue
+│   ├── docker/
+│   │   ├── api.Dockerfile
+│   │   ├── worker.Dockerfile
+│   │   └── sandbox_runner.Dockerfile
+│   ├── postgres/
+│   │   └── init/
+│   │       ├── 01_extensions.sql       (CREATE EXTENSION vector;)
+│   │       └── 02_init_tables.sql
+│   ├── redis/
+│   │   └── redis.conf
+│   └── observability/
+│       ├── prometheus.yml
+│       └── otel-collector-config.yml
+│
+├── scripts/                            # Utilidades de Evaluación y Tesis
+│   ├── seed_knowledge.py              # Ingesta de PDFs para RAG
+│   ├── evaluate_scenarios.py          # Runner de los 7 escenarios de prueba
+│   └── run_consolidation_job.py       # Disparador del Plano C
+│
+├── src/
+│   └── cognitive_assistant/
+│       ├── __init__.py
+│       ├── app.py                     # Configuración de FastAPI y Middlewares
+│       ├── main.py                    # Entrypoint principal
+│       ├── settings.py                # Configuración vía pydantic-settings
+│       │
+│       ├── shared/                    # Núcleo Común (Shared Kernel)
+│       │   ├── contracts/             # Schemas Pydantic intercapas
+│       │   ├── events/                # Eventos de dominio internos
+│       │   ├── telemetry/             # Tracing (OpenTelemetry) y logging JSON
+│       │   └── errors/                # Jerarquía de excepciones de dominio
+│       │
+│       ├── platform/                  # Plano A: Infraestructura Técnica
+│       │   ├── db/                    # SQLAlchemy 2.0 y sesiones PostgreSQL
+│       │   ├── cache/                 # Cliente Redis
+│       │   ├── vector/                # Adaptador pgvector
+│       │   ├── llm/                   # Abstracción de proveedores LLM
+│       │   ├── queue/                 # Bus de eventos en memoria / Redis Streams
+│       │   └── sandbox/               # Conector Docker SDK para herramientas
+│       │
+│       └── modules/                   # Módulos Funcionales (Mapeo a las 8 Capas)
+│           ├── c1_perception/         # Capa 1: Canales, STT y Atención
+│           ├── c2_reception/          # Capa 2: Gateway, Auth y Rate Limit
+│           ├── c3_governance/         # Capa 3: Políticas, Guardrails y Ética
+│           ├── c4_executive/          # Capa 4: Planner, Metacognición y Redis WM
+│           ├── c5_memory/             # Capa 5: Episódica, Semántica y Usuario
+│           ├── c6_agents/             # Capa 6: Orquestador y Agentes de Dominio
+│           ├── c7_tools/              # Capa 7: Tool Registry y Docker Sandbox
+│           ├── c8_effectors/          # Capa 8: Salida de Respuestas y Episodios
+│           │
+│           ├── transversal_learning/  # Plano C: Jobs Batch de Consolidación
+│           └── transversal_audit/     # Plano B: Registro Inmutable de Auditoría
+│
+├── tests/                             # Pruebas Automatizadas
+│   ├── unit/
+│   ├── integration/
+│   └── scenarios/                     # Casos Experimentales de la Tesis
+└── data/                              # Almacén de archivos local (ignorado en Git)
+
+================================================================================
+5. CRONOGRAMA DE EJECUCIÓN (PLAN DE 12 SEMANAS)
+================================================================================
+
++---------+----------------+-------------------------------+------------------------------------------+
+| Semanas | Etapas         | Entregables de Ingeniería     | Entregables de Documentación / Tesis     |
++---------+----------------+-------------------------------+------------------------------------------+
+| 01 - 02 | Etapas 1 y 2   | Núcleo E/S, trace_id, Redis   | Cap. 1: Introducción y Justificación     |
+|         |                | y Chat contextual con LLM     | Cap. 3: Arquitectura Base y Núcleo       |
++---------+----------------+-------------------------------+------------------------------------------+
+| 03 - 04 | Etapas 3 y 4   | Atención, Planner estructurado| Cap. 4: Diseño Cognitivo y               |
+|         |                | y Orquestación de Agentes     | Modelo Multiagente                       |
++---------+----------------+-------------------------------+------------------------------------------+
+| 05 - 06 | Etapas 5 y 6   | Motor de Gobernanza y Sandbox | Cap. 5: Seguridad, Mitigación y          |
+|         |                | Docker confinado para tools   | Aislamiento Operacional                  |
++---------+----------------+-------------------------------+------------------------------------------+
+| 07 - 08 | Etapa 7        | RAG en pgvector y Memoria     | Cap. 6: Estrategia de Memoria            |
+|         |                | Episódica persistente         | Persistente y Recuperación RAG           |
++---------+----------------+-------------------------------+------------------------------------------+
+| 09 - 10 | Etapa 8        | Lote de Consolidación Offline | Cap. 7: Procesamiento Asíncrono y        |
+|         |                | y Mutación de Perfil Usuario  | Aprendizaje Continuo Offline             |
++---------+----------------+-------------------------------+------------------------------------------+
+|   11    | QA & Testing   | Ejecución de los 7 escenarios | Cap. 8: Evaluación Experimental,         |
+|         |                | de validación de tesis        | Métricas y Análisis de Desempeño         |
++---------+----------------+-------------------------------+------------------------------------------+
+|   12    | Cierre         | Refactor final, hardening y   | Conclusiones, Resumen Ejecutivo,         |
+|         |                | empaquetado de artefactos     | Anexos y Registros Arquitectónicos (ADR) |
++---------+----------------+-------------------------------+------------------------------------------+
+
+================================================================================
+6. PROTOCOLO DE EVALUACIÓN EXPERIMENTAL (7 ESCENARIOS DE PRUEBA)
+================================================================================
+
+Escenario 1: Continuidad Contextual y Memoria de Trabajo (Capa 4)
+- Prueba: Consulta en dos turnos con referencias implícitas al contexto anterior.
+- Criterio de Éxito: Retención del tópico en Redis; latencia de recuperación < 20 ms.
+
+Escenario 2: Recuperación Semántica de Dominio - RAG (Capa 5)
+- Prueba: Consulta técnica de fragmentos indexados no presentes en el pre-entrenamiento.
+- Criterio de Éxito: Recall@5 > 0.85; citas textuales exactas y cero alucinaciones.
+
+Escenario 3: Ejecución Confinada en Sandbox y Timeout (Capa 7)
+- Prueba: Ejecución de script que intenta bucle infinito o acceso a sockets de red.
+- Criterio de Éxito: Terminación forzosa al alcanzar 15.0 s sin alterar el servidor host.
+
+Escenario 4: Mitigación de Amenazas y Prompt Injection (Capa 3)
+- Prueba: Ejecución de 15 ataques de jailbreak sobre las directivas del sistema.
+- Criterio de Éxito: 100% de peticiones rechazadas y registradas en audit_logs.
+
+Escenario 5: Protocolo Human-in-the-Loop (Capas 3, 4 y 8)
+- Prueba: Orden de ejecución de una acción categorizada como de alto riesgo.
+- Criterio de Éxito: Flujo desviado a NEEDS_CONFIRMATION hasta recibir token explícito.
+
+Escenario 6: Adaptación por Consolidación Offline (Plano C)
+- Prueba: Corrección de directivas de estilo en 10 turnos sucesivos y ejecución batch.
+- Criterio de Éxito: Actualización de user_profile y adopción del estilo al día siguiente.
+
+Escenario 7: Trazabilidad Extremo a Extremo (Plano B)
+- Prueba: Ráfaga de 50 peticiones simultáneas sobre canales heterogéneos.
+- Criterio de Éxito: 100% de trazas reconstruibles paso a paso mediante trace_id.
