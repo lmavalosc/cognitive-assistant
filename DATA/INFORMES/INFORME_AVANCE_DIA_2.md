@@ -143,14 +143,16 @@ tests/test_working_memory.py::test_working_memory_sliding_window_limit PASSED [ 
 tests/test_working_memory.py::test_working_memory_in_memory_fallback PASSED [ 95%]
 tests/test_working_memory.py::test_conversational_continuity_scenario_1 PASSED [100%]
 
-=================== 21 passed, 0 skipped, 0 failed in 40.06s ===================
+======================== 21 passed in 63.64s (0:01:03) ========================
 ```
+*Resultado impecable:* **0 fallos, 0 omitidos, 0 advertencias (0 warnings)**.
 
 ### Hitos de Verificación Técnicos
 1. **`test_pgvector_db.py`:** Verifica conexión directa al puerto `5433`, comprueba la existencia de la extensión `vector` y ejecuta una consulta de ordenamiento por distancia euclídea (`embedding <-> '[1,0,0]'`) sobre registros vectoriales reales.
 2. **`test_audit_persistence.py`:** Verifica la inicialización del esquema en PostgreSQL, inserta una transacción con `AuditService` y recupera el registro exacto a través del `trace_id`.
 3. **`test_cognitive_api.py`:** Valida que el endpoint deliberativo `POST /reception/deliberate` responda con código 200, respete la sesión y genere automáticamente la entrada correspondiente en `audit_transactions`.
 4. **`test_working_memory.py`:** Valida las 4 pruebas de memoria activa: operaciones CRUD en Redis, límite estricto de ventana deslizante a 6 turnos, fallback resiliente en RAM y la continuidad conversacional del **Escenario 1 de la tesis**.
+5. **`conftest.py` y ciclo de vida de bucles asyncio:** Resuelto el aislamiento de sockets y pools de `asyncpg` y `redis.asyncio` mediante fixtures de `conftest.py` y `async_client`, erradicando advertencias de corrutinas huérfanas (`Connection._cancel`) y colisiones de loops de eventos.
 
 ---
 
@@ -178,7 +180,7 @@ cognitive-assistant/
 │
 ├── src/
 │   └── cognitive_assistant/
-│       ├── app.py                                     # FastAPI app factory con lifespan asíncrono
+│       ├── app.py                                     # FastAPI app factory con lifespan asíncrono y teardown limpio
 │       ├── settings.py                                # Pydantic settings con soporte async_postgres_url
 │       │
 │       ├── modules/
@@ -190,7 +192,7 @@ cognitive-assistant/
 │       │   │   ├── graph.py                           # Grafo deliberativo de 3 nodos integrado con Working Memory
 │       │   │   └── working_memory.py                  # WorkingMemoryManager con Redis y ventana deslizante [NUEVO]
 │       │   ├── c5_memory/
-│       │   │   ├── service.py                         # Envoltorio de Mem0 para recuerdos semánticos
+│       │   │   ├── service.py                         # Envoltorio de Mem0 para recuerdos semánticos con offline fallback
 │       │   │   ├── schemas.py                         # Contratos de memoria de usuario
 │       │   │   └── router.py                          # Endpoints REST /memory/*
 │       │   └── c8_effectors/
@@ -199,10 +201,10 @@ cognitive-assistant/
 │       └── shared/
 │           ├── infrastructure/
 │           │   ├── llm.py                             # LLMGateway multimodelo con LiteLLM
-│           │   ├── db.py                              # Conexión asíncrona SQLAlchemy 2.0 y asyncpg
+│           │   ├── db.py                              # Conexión asíncrona SQLAlchemy 2.0 y asyncpg con dispose_db_engine
 │           │   ├── models.py                          # Modelo declarativo AuditTransaction
 │           │   ├── audit.py                           # Servicio AuditService no bloqueante
-│           │   └── redis_client.py                    # Cliente Redis asíncrono con memory fallback [NUEVO]
+│           │   └── redis_client.py                    # Cliente Redis asíncrono con close_redis_client y loop tracking
 │           ├── telemetry/
 │           │   ├── logging.py                         # Logger estructurado con salida JSON
 │           │   └── trace.py                           # Inyección y propagación de trace_id con ContextVar
@@ -210,16 +212,17 @@ cognitive-assistant/
 │               └── web_browser.py                     # PlaywrightBrowserTool (Edge) y FirecrawlTool
 │
 └── tests/
+    ├── conftest.py                                    # Fixtures client, async_client y cleanup_async_resources [NUEVO]
     ├── test_health.py                                 # Salud del sistema
     ├── test_trace.py                                  # Propagación de trace_id
     ├── test_llm_gateway.py                            # Gateway LiteLLM y mock fallback
     ├── test_memory_service.py                         # Operaciones de memoria Mem0
     ├── test_cognitive_executive.py                    # Grafo deliberativo LangGraph
-    ├── test_cognitive_api.py                          # API deliberativa y persistencia de auditoría
+    ├── test_cognitive_api.py                          # API deliberativa y persistencia de auditoría (async_client)
     ├── test_web_tools.py                              # Inicialización de herramientas web
     ├── test_pgvector_db.py                            # Conexión real a PostgreSQL y pgvector (PASSED)
     ├── test_audit_persistence.py                      # Persistencia y recuperación en audit_transactions (PASSED)
-    └── test_working_memory.py                         # CRUD Redis, ventana deslizante y Escenario 1 (PASSED) [NUEVO]
+    └── test_working_memory.py                         # CRUD Redis, ventana deslizante y Escenario 1 (PASSED)
 ```
 
 ---
