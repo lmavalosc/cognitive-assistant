@@ -1,9 +1,12 @@
 from fastapi import APIRouter, status
 from cognitive_assistant.modules.c2_reception.schemas import (
+    DeliberateRequest,
+    DeliberateResponse,
     HealthResponse,
     ReceptionMessageRequest,
     ReceptionMessageResponse,
 )
+from cognitive_assistant.modules.c4_executive.graph import execute_cognitive_cycle
 from cognitive_assistant.modules.c8_effectors.dispatcher import EffectorDispatcher
 from cognitive_assistant.settings import settings
 from cognitive_assistant.shared.telemetry.logging import get_logger
@@ -53,3 +56,49 @@ async def receive_message(payload: ReceptionMessageRequest) -> ReceptionMessageR
         dispatched=True,
         details=dispatch_result,
     )
+
+
+@router.post(
+    "/reception/deliberate",
+    response_model=DeliberateResponse,
+    status_code=status.HTTP_200_OK,
+    summary="Ciclo cognitivo deliberativo completo",
+)
+async def deliberate_message(payload: DeliberateRequest) -> DeliberateResponse:
+    """
+    Ejecuta el ciclo cognitivo completo:
+    C2 Ingesta -> C5 Recuperación Memoria (mem0) -> C4 Planificación (LangGraph)
+    -> Plano A Inferencia (LiteLLM) -> C5 Consolidación -> C8 Efector.
+    """
+    current_trace = get_trace_id()
+    logger.info(
+        "Iniciando deliberación cognitiva en C2 para user_id='%s', trace_id=%s",
+        payload.user_id,
+        current_trace,
+    )
+
+    final_state = await execute_cognitive_cycle(
+        message=payload.content,
+        user_id=payload.user_id,
+        metadata=payload.metadata,
+    )
+
+    dispatcher = EffectorDispatcher()
+    await dispatcher.dispatch(
+        event_type="cognitive.response",
+        payload={
+            "response": final_state.get("response", ""),
+            "plan": final_state.get("plan", []),
+            "user_id": payload.user_id,
+        },
+    )
+
+    return DeliberateResponse(
+        status=final_state.get("status", "completed"),
+        trace_id=current_trace,
+        response=final_state.get("response", ""),
+        plan=final_state.get("plan", []),
+        context_memories=final_state.get("context_memories", []),
+        dispatched=True,
+    )
+

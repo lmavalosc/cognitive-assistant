@@ -26,3 +26,22 @@ class ReceptionMessageResponse(BaseModel):
     trace_id: str = Field(..., description="Trace ID asociado al ciclo de vida del mensaje")
     dispatched: bool = Field(default=True, description="Indica si el evento fue despachado al efector")
     details: Dict[str, Any] = Field(default_factory=dict, description="Detalles adicionales del despacho")
+
+
+class DeliberateRequest(BaseModel):
+    """Petición para ciclo deliberativo completo (C2 -> C5 -> C4 -> Plano A -> C8)."""
+
+    content: str = Field(..., min_length=1, description="Estímulo o mensaje de entrada a procesar")
+    user_id: str = Field(default="default_user", description="Identificador del usuario")
+    metadata: Dict[str, Any] = Field(default_factory=dict, description="Metadatos de contexto")
+
+
+class DeliberateResponse(BaseModel):
+    """Respuesta con deliberación cognitiva, recuerdos aplicados y plan."""
+
+    status: str = Field(default="completed", description="Estado de la deliberación")
+    trace_id: str = Field(..., description="Trace ID del ciclo cognitivo")
+    response: str = Field(..., description="Respuesta final generada por el asistente")
+    plan: list[str] = Field(default_factory=list, description="Plan cognitivo formulado por LangGraph")
+    context_memories: list[str] = Field(default_factory=list, description="Recuerdos recuperados desde mem0")
+    dispatched: bool = Field(default=True, description="Indica si el efector C8 fue notificado")

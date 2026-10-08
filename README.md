@@ -12,9 +12,12 @@ Implementación mínima ejecutable y robusta del **Tronco Encefálico** (Núcleo
 - [x] **Devolución de `trace_id` en headers HTTP** (`X-Trace-ID`).
 - [x] **Inyección de `trace_id` en logs estructurados** automáticamente (`TraceIdFilter`).
 - [x] **Docker Compose** orquestando API + PostgreSQL 16 + Redis 7 con healthchecks.
-- [x] **Módulos semilla**:
-  - `c2_reception`: Recepción transaccional y validación de entrada.
-  - `c8_effectors`: Despachador de eventos y salida con trazabilidad.
+- [x] **Módulos y Planos Integrados**:
+  - `Plano A (Infraestructura)`: Inferencia y enrutamiento LLM unificado con **LiteLLM**.
+  - `Capa 2 (Recepción)`: Recepción transaccional y deliberativa (`POST /reception/deliberate`).
+  - `Capa 4 (Ejecutivo Cognitivo)`: Grafo deliberativo de toma de decisiones orquestado con **LangGraph**.
+  - `Capa 5 (Memoria Persistente)`: Recuerdos episódicos y preferencias del usuario gestionados con **Mem0**.
+  - `Capa 8 (Efectores)`: Despachador de eventos y salida con trazabilidad universal (`trace_id`).
 
 ---
 
@@ -24,14 +27,12 @@ Implementación mínima ejecutable y robusta del **Tronco Encefálico** (Núcleo
 cognitive-assistant/
 ├── README.md
 ├── pyproject.toml
+├── requirements.txt
 ├── .env.example
 ├── .env
 ├── .gitignore
 ├── docker-compose.yml
 ├── Dockerfile
-│
-├── INFORMES/
-│   └── INFORME_AVANCE_DIA_1.md
 │
 ├── src/
 │   └── cognitive_assistant/
@@ -41,26 +42,35 @@ cognitive-assistant/
 │       ├── settings.py
 │       │
 │       ├── shared/
-│       │   ├── __init__.py
+│       │   ├── infrastructure/
+│       │   │   ├── __init__.py
+│       │   │   └── llm.py                      # Plano A: Gateway LiteLLM con trazas
 │       │   └── telemetry/
 │       │       ├── __init__.py
-│       │       ├── logging.py
-│       │       └── trace.py
+│       │       ├── logging.py                  # TraceIdFilter y log estructurado
+│       │       └── trace.py                    # ContextVar y TraceIDMiddleware
 │       │
 │       └── modules/
-│           ├── __init__.py
-│           ├── c2_reception/
-│           │   ├── __init__.py
-│           │   ├── router.py
+│           ├── c2_reception/                   # Capa 2: Recepción & Endpoints deliberativos
+│           │   ├── router.py                   # /health, /reception/message, /reception/deliberate
 │           │   └── schemas.py
-│           └── c8_effectors/
-│               ├── __init__.py
+│           ├── c4_executive/                   # Capa 4: Ejecutivo Cognitivo (LangGraph)
+│           │   ├── state.py                    # CognitiveState TypedDict
+│           │   └── graph.py                    # StateGraph deliberativo y ciclo cognitivo
+│           ├── c5_memory/                      # Capa 5: Memoria Persistente (Mem0)
+│           │   ├── router.py                   # /memory/add, /memory/search, /memory/all
+│           │   ├── schemas.py
+│           │   └── service.py                  # MemoryService con Mem0 y fallback local
+│           └── c8_effectors/                   # Capa 8: Efectores y Despacho
 │               └── dispatcher.py
 │
 └── tests/
-    ├── __init__.py
-    ├── test_health.py
-    └── test_trace.py
+    ├── test_health.py                          # Tests de salud y versión
+    ├── test_trace.py                           # Tests de propagación de trace_id
+    ├── test_llm_gateway.py                     # Tests de inferencia LiteLLM y fallback
+    ├── test_memory_service.py                  # Tests de almacenamiento y búsqueda Mem0
+    ├── test_cognitive_executive.py             # Tests del grafo deliberativo LangGraph
+    └── test_cognitive_api.py                   # Tests E2E de la API cognitiva
 ```
 
 ---
@@ -113,6 +123,20 @@ python src/cognitive_assistant/main.py
   content-type: application/json
 
   {"status":"ok","app":"Cognitive Assistant","version":"0.1.0","trace_id":"3c9b4e6d2a1f4b8c9d0e1f2a3b4c5d6e"}
+  ```
+
+- **Ciclo Cognitivo Deliberativo (LangGraph + LiteLLM + Mem0):**
+  ```bash
+  curl -X POST http://localhost:8000/reception/deliberate \
+    -H "Content-Type: application/json" \
+    -d '{"content": "¿Cuáles son los objetivos principales?", "user_id": "moises"}'
+  ```
+
+- **Gestión de Memoria Persistente (Mem0):**
+  ```bash
+  curl -X POST http://localhost:8000/memory/add \
+    -H "Content-Type: application/json" \
+    -d '{"content": "El usuario investiga la arquitectura cognitiva de 8 capas", "user_id": "moises"}'
   ```
 
 - **Documentación Swagger UI interactiva:**

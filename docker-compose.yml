@@ -13,7 +13,7 @@ services:
         condition: service_started
 
   postgres:
-    image: postgres:16-alpine
+    image: pgvector/pgvector:pg16
     container_name: cognitive_assistant_postgres
     environment:
       POSTGRES_DB: nucleo_cognitivo
@@ -23,6 +23,7 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./docker/init-db:/docker-entrypoint-initdb.d
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U nucleo -d nucleo_cognitivo"]
       interval: 5s

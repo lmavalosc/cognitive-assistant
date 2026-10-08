@@ -22,6 +22,17 @@ class Settings(BaseSettings):
     rate_limit_requests: int = 60
     rate_limit_window_seconds: int = 60
 
+    # Plano A: LLM Gateway (LiteLLM)
+    default_llm_model: str = "gpt-4o-mini"
+    llm_temperature: float = 0.2
+    llm_api_key: str | None = None
+    llm_api_base: str | None = None
+    llm_mock_fallback: bool = True
+
+    # Capa 5: Memoria Persistente (mem0)
+    memory_enabled: bool = True
+    memory_user_id: str = "default_user"
+
     model_config = SettingsConfigDict(
         env_file=".env",
         env_file_encoding="utf-8",
