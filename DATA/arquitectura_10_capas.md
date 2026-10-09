@@ -122,13 +122,13 @@ Nota de orden: la Capa 9 se dibuja al final del grafo pero opera asíncronamente
 | Capa v2.1 | Estado | Evidencia en código |
 |---|---|---|
 | C1 Percepción | Parcial (herramientas web existen; Telegram/audio pendientes) | `shared/tools/web_browser.py` |
-| C2 Recepción | Operativo con brechas P0 (sin auth, sin rate limit) | `modules/c2_reception/` |
-| C3 Gobernanza | **No implementada** — bloqueo P0 antes de herramientas | (plan: Fase 3, `AUDITORIA&REPARACIÓN/PROMPT_REMEDIACION_SEGURIDAD.md`) |
+| C2 Recepción | Operativo (auth por API key, rate limiting, contratos con límites) | `modules/c2_reception/`, `shared/infrastructure/{auth,rate_limit}.py` |
+| C3 Gobernanza | **Implementada y verificada** (PromptGuard, sanitizer, filtro de sensibilidad; commit `8f81b75`) — pendiente el punto (b) de control por ToolRequest, que aterriza junto con C8 | `modules/c3_governance/` |
 | C4 Memoria de Trabajo | Operativo (Redis, 6 turnos, TTL 24h) | `modules/c4_executive/working_memory.py` |
 | C5 Ejecutivo | Operativo básico (grafo lineal de 3 nodos; planner acíclico pendiente) | `modules/c4_executive/graph.py` |
 | C6 Memorias Persistentes | Parcial (Mem0 + fallback local; pgvector RAG pendiente) | `modules/c5_memory/` |
 | C7 Agentes | No implementada | (Semana 4 del plan) |
-| C8 Sandbox Herramientas | **Latente — no construir hasta cerrar C3** | (Semana 6 del plan) |
+| C8 Sandbox Herramientas | No implementada — siguiente en la cadena (C3 cerrada; orden: C8 sandbox antes del ReAct autónomo) | (Semana 6 del plan) |
 | C9 Aprendizaje Offline | No implementada | (Semana 8 del plan) |
 | C10 Efectores + OutcomeEvent | Parcial (dispatcher existe; OutcomeEvent ausente) | `modules/c8_effectors/dispatcher.py` |
 

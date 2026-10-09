@@ -11,6 +11,7 @@
 > 2. **Puerta de seguridad:** la **FASE 4 queda BLOQUEADA** hasta completar la remediación P0 (`DATA/AUDITORIA&REPARACIÓN/AUDITORIA_SEGURIDAD_2026-10-08.md`, `DATA/AUDITORIA&REPARACIÓN/PROMPT_REMEDIACION_SEGURIDAD.md`): Capa 3 (PromptGuard + 403 RFC 7807), autenticación por API key con user_id derivado, y validador anti-SSRF en las herramientas web. Razón: sin C3, cablear herramientas encadena prompt injection -> envenenamiento de memoria -> SSRF.
 > 3. **Correcciones de la Fase 3/4 ya detectadas en auditoría:** `max_length=8000` faltante en contratos; `user_id`/`session_id` autodeclarados (SEC-05) — la Etapa 3.3 y las claves Redis de la 2.2 deberán incorporar namespace por usuario; timeout de Playwright en 20000 ms (Etapa 4.3 sigue pendiente; ahora forma parte de la Parte C de la remediación, no de la Fase 4).
 > 4. **La Fase 3 absorbió los P0/P1** del prompt de remediación (especificados allí como Partes A-D). Este plan queda como especificación funcional; la especificación operativa de implementación es `DATA/AUDITORIA&REPARACIÓN/PROMPT_REMEDIACION_SEGURIDAD.md`.
+> 5. **CIERRE VERIFICADO (08-10-2026, posterior):** Fase 3 implementada y commiteada en `8f81b75`; verificación `pytest -q` = **46 passed**. Estado: **FASE 3 CERRADA**. La FASE 4 queda DESBLOQUEADA con orden obligatorio: policy check de herramientas (C3 punto b) y sandbox (C8) antes del nodo ReAct autónomo.
 >
 > A partir de aquí, el contenido original se conserva.
 

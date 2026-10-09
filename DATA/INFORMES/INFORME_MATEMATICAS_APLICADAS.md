@@ -4,13 +4,15 @@ Documento: `TR-COG-2026-MATH-V1.0` / `DATA/INFORMES/INFORME_MATEMATICAS_APLICADA
 Rama Git: `semana1-tronco-encefalico`
 Fecha: 08 de Octubre, 2026
 Autor: Moisés
-Fuentes: `Arquitectura de un Cerebro Digital` (pipeline de 10 capas) + `TR-COG-2026-ARCH-V2.0` (8 Capas Funcionales y 3 Planos Transversales de JARVIS 0.0)
+Fuentes: `Arquitectura de un Cerebro Digital` (pipeline de 10 capas) + `TR-COG-2026-ARCH-V2.1` (10 Capas Funcionales y 2 Planos Transversales de JARVIS 0.0, taxonomía vigente; la v2.0 de 8+3 quedó como histórica, ver ADR 007)
+
+> **NOTA DE ACTUALIZACIÓN (08-10-2026):** las menciones "Capa N" y "Plano C" del cuerpo de este informe siguen la numeración histórica v1.0, que además coincide con los nombres actuales de los módulos de código (`c4_executive/`, `c5_memory/`, etc.). Equivalencias con la taxonomía vigente v2.1: C4 -> **C4 (memoria de trabajo) + C5 (ejecutivo)**; C5 -> **C6**; C6 -> **C7**; C7 -> **C8**; C8 -> **C10**; Plano C -> **Capa 9**. Planos transversales vigentes: A (Infraestructura) y B (Observabilidad/Auditoría). Tabla completa en `DATA/arquitectura_10_capas.md`.
 
 ---
 
 ## 1. Resumen Ejecutivo
 
-Este informe consolida **todas las operaciones matemáticas, factores y parámetros** que intervienen en el funcionamiento del Asistente Cognitivo Modular, y establece la **función exacta** que cada una cumple dentro del pipeline deliberativo. El documento demuestra que el sistema no es un conjunto de llamadas a APIs, sino una **cadena de transformaciones algebraicas, probabilísticas y de optimización** sobre espacios vectoriales de alta dimensión, trazables desde la Capa 1 (Percepción) hasta la Capa 8 (Efectores), y auditables mediante los 7 Escenarios Experimentales de la tesis.
+Este informe consolida **todas las operaciones matemáticas, factores y parámetros** que intervienen en el funcionamiento del Asistente Cognitivo Modular, y establece la **función exacta** que cada una cumple dentro del pipeline deliberativo. El documento demuestra que el sistema no es un conjunto de llamadas a APIs, sino una **cadena de transformaciones algebraicas, probabilísticas y de optimización** sobre espacios vectoriales de alta dimensión, trazables desde la Capa 1 (Percepción) hasta la Capa 10 (Efectores y Observación de Consecuencias), y auditables mediante los 7 Escenarios Experimentales de la tesis.
 
 Las matemáticas se agrupan en **seis bloques funcionales**:
 1. **Bloque I — Operaciones núcleo del pipeline** (vectorización, convolución, recurrencia, atención, similitud, no linealidades, decodificación).
@@ -25,7 +27,7 @@ Las matemáticas se agrupan en **seis bloques funcionales**:
 ## 2. Objetivo, Alcance y Metodología
 
 - **Objetivo:** Documentar la función de cada fórmula del marco matemático y su correspondencia con un módulo ejecutable del repositorio `cognitive-assistant`.
-- **Alcance:** Las 10 capas del cerebro digital mapeadas a las 8 Capas Funcionales + 3 Planos Transversales de JARVIS 0.0, y a los 7 Escenarios Experimentales.
+- **Alcance:** Las 10 capas del cerebro digital mapeadas 1:1 a las **10 Capas Funcionales + 2 Planos Transversales** de JARVIS 0.0 (taxonomía vigente v2.1), y a los 7 Escenarios Experimentales.
 - **Metodología:** Por cada operación se declara: (a) fórmula, (b) función matemática, (c) rol en el sistema cognitivo, (d) aplicación en JARVIS (capa/archivo), (e) parámetros a controlar.
 
 ---
@@ -297,11 +299,11 @@ $$z_i \leftarrow z_i - \alpha \quad \text{si } y_i \text{ fue seleccionado previ
 2. La **memoria de trabajo en Redis** es el análogo funcional explícito de la recurrencia $h_t$, y la **base vectorial pgvector + HNSW** es el análogo de la similitud coseno asociativa; ambos se validan con los Escenarios 1 y 2.
 3. Las matemáticas de **estabilidad y decodificación** (normas, temperatura, top-k/p, penalización) no son detalles: son los controles que garantizan determinismo donde se requiere (gobernanza, contratos) y diversidad donde aporta (redacción, investigación).
 4. Los factores de **ingeniería numérica** (cuantización, Roofline, batch) son los que hacen viable el sistema en hardware real sin GPU, y fundamentan las decisiones de latencia y confinamiento de los Escenarios 3 y 4.
-5. La **entropía cruzada, KL y AdamW** constituyen el sustrato del aprendizaje offline (Plano C), cerrando el ciclo: el asistente no solo infiere, sino que **minimiza su error futuro** (Escenario 6).
+5. La **entropía cruzada, KL y AdamW** constituyen el sustrato del aprendizaje offline (Capa 9, antiguo Plano C), cerrando el ciclo: el asistente no solo infiere, sino que **minimiza su error futuro** (Escenario 6).
 
 ## 12. Referencias
 
 - `Arquitectura de un Cerebro Digital` (pipeline de 10 capas y arquitectura matemática).
-- `TR-COG-2026-ARCH-V2.0` — Taxonomía de 8 Capas Funcionales y 3 Planos Transversales.
-- `PLAN_DE_TRABAJO_8_SEMANAS.md` — Cronograma maestro y matriz de 7 escenarios.
-- `INFORME_AVANCE_DIA_1.md` / `INFORME_AVANCE_DIA_2.md` — Estado real de integración y pruebas.
+- `TR-COG-2026-ARCH-V2.1` / `DATA/arquitectura_10_capas.md` — Taxonomía vigente de 10 Capas Funcionales y 2 Planos Transversales (ver ADR 007); `TR-COG-2026-ARCH-V2.0` / `DATA/arquitectura_8_capas.md` — versión histórica superada.
+- `PLAN_DE_TRABAJO_8_SEMANAS.md` — Cronograma maestro y matriz de 7 escenarios (con Sección 0 de actualización vinculante).
+- `INFORME_AVANCE_DIA_1.md` / `INFORME_AVANCE_DIA_2.md` — Estado real de integración y pruebas (con secciones de errata).
