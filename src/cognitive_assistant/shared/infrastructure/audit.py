@@ -5,6 +5,7 @@ from sqlalchemy import desc, select
 
 from cognitive_assistant.shared.infrastructure.db import get_session_factory
 from cognitive_assistant.shared.infrastructure.models import AuditTransaction
+from cognitive_assistant.shared.infrastructure.pii import scrub_pii
 
 logger = logging.getLogger(__name__)
 
@@ -31,19 +32,22 @@ class AuditService:
         """
         Registra una transacción en la tabla audit_transactions.
         Si la base de datos no está disponible, realiza fallback a logging sin fallar.
+        Aplica ofuscación de PII previa a la persistencia.
         """
+        clean_summary = scrub_pii(summary[:1000]) if summary else None
         record = AuditTransaction(
             trace_id=trace_id,
             session_id=session_id,
             channel=channel,
             endpoint=endpoint,
-            request_summary=summary[:1000] if summary else None,
+            request_summary=clean_summary,
             response_status=status,
             duration_ms=duration_ms,
             metadata_json=metadata,
             security_violation=security_violation,
             violation_reason=violation_reason,
         )
+
 
         try:
             factory = get_session_factory()

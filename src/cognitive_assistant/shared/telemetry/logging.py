@@ -25,11 +25,14 @@ class JsonFormatter(logging.Formatter):
 
 
 class TraceIdFilter(logging.Filter):
-    """Filtro para inyectar trace_id en registros."""
+    """Filtro para inyectar trace_id en registros sin generar identificadores artificiales."""
 
     def filter(self, record: logging.LogRecord) -> bool:
-        record.trace_id = get_trace_id()
+        tid = trace_id_ctx.get()
+        if tid:
+            record.trace_id = tid
         return True
+
 
 
 def setup_logging(level: str = "INFO") -> None:

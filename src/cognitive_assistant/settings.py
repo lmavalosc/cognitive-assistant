@@ -22,6 +22,11 @@ class Settings(BaseSettings):
     rate_limit_requests: int = 60
     rate_limit_window_seconds: int = 60
 
+    # Capa 3: Gobernanza y Autenticación
+    guard_risk_threshold: float = 0.70
+    api_keys: list[str] = []
+    cors_allowed_origins: list[str] = ["http://localhost:3000", "http://localhost:8000"]
+
     # Plano A: LLM Gateway (LiteLLM)
     default_llm_model: str = "gpt-4o-mini"
     llm_temperature: float = 0.2
@@ -38,6 +43,19 @@ class Settings(BaseSettings):
         env_file_encoding="utf-8",
         extra="ignore",
     )
+
+    def model_post_init(self, __context) -> None:
+        # Si api_keys o cors_allowed_origins vienen como string CSV desde env, convertirlos a lista
+        if isinstance(self.api_keys, str):
+            self.api_keys = [k.strip() for k in self.api_keys.split(",") if k.strip()]
+        if isinstance(self.cors_allowed_origins, str):
+            self.cors_allowed_origins = [o.strip() for o in self.cors_allowed_origins.split(",") if o.strip()]
+
+        if self.app_env != "local" and not self.api_keys:
+            raise ValueError(
+                "Configuración de seguridad inválida: en app_env != 'local' se debe configurar al menos una API key en 'api_keys'."
+            )
+
 
     @property
     def postgres_url(self) -> str:

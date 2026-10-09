@@ -19,11 +19,24 @@ def test_firecrawl_tool_instantiation():
 @pytest.mark.asyncio
 async def test_firecrawl_local_fallback():
     """Verifica que FirecrawlTool sin API Key genere respuesta estructurada con trace_id."""
+    from unittest.mock import AsyncMock, patch
+
     set_trace_id("test-web-trace-001")
     tool = FirecrawlTool()
 
-    # Usar una URL mock o local para fallback
-    result = await tool.scrape_url("http://localhost:8000/health")
-    assert "trace_id" in result
-    assert result["trace_id"] == "test-web-trace-001"
-    assert "markdown" in result
+    with patch("cognitive_assistant.shared.tools.web_browser.get_playwright_tool") as mock_get_pw:
+        mock_pw = AsyncMock()
+        mock_pw.fetch_page_content.return_value = {
+            "title": "Example Domain",
+            "content": "Contenido extraído mediante fallback local.",
+            "status": "success",
+            "trace_id": "test-web-trace-001",
+        }
+        mock_get_pw.return_value = mock_pw
+
+        result = await tool.scrape_url("https://example.com")
+        assert "trace_id" in result
+        assert result["trace_id"] == "test-web-trace-001"
+        assert "markdown" in result
+        assert "Contenido extraído" in result["markdown"]
+

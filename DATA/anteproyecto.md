@@ -27,3 +27,11 @@ Desarrollar una arquitectura de software basada en un monolito modular hexagonal
 
 ## 4. Metodología
 Se adopta la estrategia constructiva **"Core-to-Periphery"** (del núcleo a la periferia) dividida en 8 etapas secuenciales donde cada iteración produce un sistema completamente ejecutable, verificable y testeable de extremo a extremo.
+
+---
+
+## 5. Addendum de Precisión Taxonómica (08-10-2026)
+
+El Objetivo Específico 1 menciona "8 capas funcionales verticales y 3 planos transversales", correspondiente a la taxonomía inicial del diseño (v1.0). Durante la ejecución del Tronco Encefálico, la auditoría arquitectónica detectó defectos estructurales en esa numeración (capa con responsabilidades múltiples, plano transversal que era funcionalmente una capa, gobernanza de un solo punto, ausencia de bucles de retroalimentación documentados).
+
+Por **ADR 007** (`DATA/adr/007_evolucion_8_a_10_capas.md`), la arquitectura objetivo se formaliza como **10 capas funcionales + 2 planos transversales** (`DATA/arquitectura_10_capas.md`). Esta evolución no altera el Objetivo General, la metodología Core-to-Periphery ni los 7 escenarios experimentales: es una especialización de la misma propuesta, derivada de la evidencia de implementación. Si el documento formal del anteproyecto ya fue radicado ante el comité, esta sección sirve como nota de precisión para la sustentación; si aún no se radica, el Objetivo 1 puede reeditarse textualmente a "10 capas funcionales verticales y 2 planos transversales".

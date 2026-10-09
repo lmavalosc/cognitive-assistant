@@ -2,6 +2,8 @@
 
 Implementación mínima ejecutable y robusta del **Tronco Encefálico** (Núcleo Transaccional) para la tesis de Asistente Cognitivo, siguiendo el principio arquitectónico **Core-to-Periphery**.
 
+> **Arquitectura objetivo (vigente desde el 08-10-2026):** **10 Capas Funcionales + 2 Planos Transversales**, definida en [`DATA/arquitectura_10_capas.md`](DATA/arquitectura_10_capas.md) y aprobada en [`DATA/adr/007_evolucion_8_a_10_capas.md`](DATA/adr/007_evolucion_8_a_10_capas.md). Los nombres de módulos actuales (`c2_`, `c4_`, `c5_`, `c8_`) corresponden a la numeración histórica de la v1.0 y se migrarán por alias, nunca por renombrado destructivo.
+
 ---
 
 ## 🎯 Objetivos de la Etapa 1
@@ -99,11 +101,26 @@ python -m venv .venv
 pip install -e ".[dev]"
 ```
 
-### 3. Ejecutar el Servidor en Modo Desarrollo
+### 3. Variables de Entorno (.env)
+
+Copia `.env.example` a `.env` y ajusta según tu entorno:
+
+| Variable | Descripción | Valor por Defecto |
+|---|---|---|
+| `APP_ENV` | Entorno de ejecución (`local`, `production`) | `local` |
+| `API_KEYS` | Claves autorizadas separadas por comas (obligatorio si `APP_ENV != local`) | `dev-secret-key-1,dev-secret-key-2` |
+| `CORS_ALLOWED_ORIGINS` | Orígenes HTTP permitidos para CORS | `http://localhost:3000,http://localhost:8000` |
+| `GUARD_RISK_THRESHOLD` | Umbral de riesgo de corte para PromptGuard (Capa 3) | `0.70` |
+| `RATE_LIMIT_ENABLED` | Activa limitador de tasa token bucket en Redis | `true` |
+| `RATE_LIMIT_REQUESTS` | Peticiones permitidas por ventana | `60` |
+| `RATE_LIMIT_WINDOW_SECONDS` | Tamaño de ventana de limitación en segundos | `60` |
+
+### 4. Ejecutar el Servidor en Modo Desarrollo
 
 ```powershell
 uvicorn cognitive_assistant.main:app --reload --host 0.0.0.0 --port 8000
 ```
+
 
 O directamente ejecutando el módulo:
 ```powershell
@@ -136,7 +153,7 @@ python src/cognitive_assistant/main.py
   ```bash
   curl -X POST http://localhost:8000/memory/add \
     -H "Content-Type: application/json" \
-    -d '{"content": "El usuario investiga la arquitectura cognitiva de 8 capas", "user_id": "moises"}'
+    -d '{"content": "El usuario investiga la arquitectura cognitiva de 10 capas", "user_id": "moises"}'
   ```
 
 - **Documentación Swagger UI interactiva:**

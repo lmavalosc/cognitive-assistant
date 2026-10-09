@@ -58,3 +58,11 @@ redis_data/
 
 # Cloned reference repositories
 repos/
+
+# Agent harness artifacts
+.agents/
+.claude/
+agent/
+skills-lock.json
+DATA/skills/
+

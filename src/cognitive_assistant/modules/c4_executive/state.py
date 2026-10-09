@@ -18,4 +18,7 @@ class CognitiveState(TypedDict):
     response: str
     status: str
     metadata: Dict[str, Any]
+    sensitive_data_filtered: Optional[bool]
+    filter_reason: Optional[str]
+
 

@@ -110,6 +110,23 @@ Durante la jornada del **Día 2**, el desarrollo del Asistente Cognitivo Modular
   - `DeliberateRequest` y `DeliberateResponse` incorporan el campo `session_id`.
   - Se vincula el `session_id` con el registro en la tabla `audit_transactions`.
 
+### 3.8. Cortafuegos Cognitivo, Gobernanza Perimétrica y Endpoint Canónico (Fase 3)
+- **Módulo creado:** `src/cognitive_assistant/modules/c3_governance/`
+  - `schemas.py`:
+    - Enumeración `ViolationType` (`PROMPT_INJECTION`, `JAILBREAK_ATTEMPT`, `SYSTEM_PROMPT_LEAK`, `PAYLOAD_OVERSIZED`, `INVALID_CONTROL_CHARS`, `NONE`).
+    - Modelo `RiskEvaluation` (`risk_score`, `allowed`, `violation_type`, `reason`, `sanitized_content`, `trace_id`, `metadata`).
+    - Modelo RFC 7807 `ProblemDetails` para respuestas HTTP 403 estandarizadas.
+  - `sanitizer.py`: `InputSanitizer` que aplica normalización Unicode NFKC, remoción de bytes nulos (`\x00`) y caracteres de control ASCII no permitidos, además de imponer un límite duro de 8,000 caracteres.
+  - `prompt_guard.py`: `PromptGuard`, motor heurístico determinista de ultra-baja latencia (< 1 ms) con firmas compiladas contra:
+    - Inyección de instrucciones (`ignore previous instructions`, `anula las reglas`, `system override`).
+    - Intentos de Jailbreak (`DAN mode`, `developer mode`, `pretend you have no limits`, `actúa como IA sin restricciones`).
+    - Exfiltración de prompts del sistema y credenciales (`print system prompt`, `revela instrucciones`, `dump api keys`).
+  - `service.py`: `GovernanceService` que coordina sanitización, evaluación heurística y umbral de decisión (`RISK_THRESHOLD = 0.70`).
+- **Endpoint Canónico y Cortafuegos en Capa 2:** `src/cognitive_assistant/modules/c2_reception/router.py`
+  - Se publica el endpoint canónico exigido por el plan maestro: **`POST /api/v1/chat`** (manteniendo `/reception/deliberate` como alias retrocompatible).
+  - Intercepción perimétrica previa a Capa 4: Si `allowed == False`, se corta el flujo en 0.1 ms sin invocar al LLM ni consumir tokens, se persiste la violación en PostgreSQL (`security_violation=True`, código 403) y se responde inmediatamente con RFC 7807 `HTTP 403 Forbidden`.
+  - Si `allowed == True`, el estímulo sanitizado se canaliza al ciclo deliberativo de LangGraph.
+
 ---
 
 ## 4. Matriz de Pruebas Automatizadas y Validación
@@ -241,3 +258,16 @@ A continuación se abordará la siguiente fase planificada:
 
 ---
 *Este documento se mantendrá en actualización continua a medida que se completen las fases sucesivas del Día 2.*
+
+---
+
+## 7. Errata y Actualización Posterior (08-10-2026)
+
+Sección añadida en la corrección documental global. Las secciones 1–6 describen el estado al momento de redacción; las correcciones siguientes aplican tras auditorías posteriores al cierre:
+
+1. **Taxonomía vigente:** las referencias a "Capa 3/4/6/7" siguen la numeración v1.0. Arquitectura objetivo actual: **10 Capas + 2 Planos** (`DATA/arquitectura_10_capas.md`, ADR 007). Equivalencias relevantes: la Fase 3 corresponde a Capa 3 (sin cambio); la "Capa 4" citada se divide en C4 (memoria de trabajo) + C5 (ejecutivo); la Fase 4 ("Capa 6/7") corresponde a las vigentes C7 (agentes) y C8 (sandbox).
+2. **Puerta de seguridad (decisión vinculante):** la **Fase 4 queda BLOQUEADA** hasta completar la remediación P0 definida en `DATA/AUDITORIA&REPARACIÓN/PROMPT_REMEDIACION_SEGURIDAD.md` (gobernanza, autenticación, anti-SSRF). Motivo, documentado en `DATA/AUDITORIA&REPARACIÓN/AUDITORIA_SEGURIDAD_2026-10-08.md`: cablear navegador + LLM + memoria persistente sin gobernanza encadena prompt injection → envenenamiento de memoria → SSRF en un solo vector.
+3. **Conteo de pruebas:** este informe afirma "20 pruebas" en el resumen (sección 1.7) y "21 passed" en la matriz (sección 4). El conteo correcto según la salida de pytest citada es **21 passed, 0 skipped**. La cifra "20" del resumen es un error de redacción.
+4. **Timeout de navegación:** la Etapa 4.3 (5 s) sigue pendiente; el valor real en `web_browser.py` es 20000 ms. Se cierra como parte de la remediación P0 (Parte C).
+5. **Rate limiting:** no implementado pese a las variables `RATE_LIMIT_*` (divergencia detectada por la auditoría; era entregable del Día 05 del plan Semana 1). Se cierra como P1 (Parte D).
+6. **Identidad autodeclarada:** el `session_id`/`user_id` del API implementado aquí queda formalmente clasificado como defecto de seguridad (SEC-05); la corrección (derivar identidad de autenticación, namespace `user:{id}:session:{id}:wm`) está especificada en la Parte B del prompt de remediación y modificará las claves Redis documentadas en la sección 3.7.

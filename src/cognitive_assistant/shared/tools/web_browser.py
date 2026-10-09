@@ -8,6 +8,7 @@ import os
 from typing import Any, Dict, Optional
 from cognitive_assistant.shared.telemetry.logging import get_logger
 from cognitive_assistant.shared.telemetry.trace import get_trace_id
+from cognitive_assistant.shared.tools.url_validator import validate_outbound_url
 
 logger = get_logger("cognitive_assistant.tools.web")
 
@@ -23,13 +24,16 @@ class PlaywrightBrowserTool:
         self,
         url: str,
         wait_until: str = "domcontentloaded",
-        timeout_ms: int = 20000,
+        timeout_ms: int = 5000,
     ) -> Dict[str, Any]:
         """
         Navega a una URL y extrae el título, texto plano y metadatos.
+        Aplica validación estricta anti-SSRF antes de cualquier conexión.
         """
+        validate_outbound_url(url)
         trace_id = get_trace_id()
         logger.info("Navegando a '%s' con Playwright (channel=%s, trace_id=%s)", url, self.channel, trace_id)
+
 
         from playwright.async_api import async_playwright
 
@@ -104,9 +108,12 @@ class FirecrawlTool:
         """
         Extrae el contenido de una URL en formato Markdown limpio.
         Si no hay API key configurada, delega a Playwright para extracción local.
+        Aplica validación estricta anti-SSRF antes de cualquier conexión.
         """
+        validate_outbound_url(url)
         trace_id = get_trace_id()
         logger.info("Extrayendo contenido de '%s' con Firecrawl (trace_id=%s)", url, trace_id)
+
 
         if self._app is not None:
             try:

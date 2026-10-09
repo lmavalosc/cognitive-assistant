@@ -1,9 +1,12 @@
 from contextlib import asynccontextmanager
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
+
 from cognitive_assistant.modules.c2_reception.router import router as reception_router
 from cognitive_assistant.modules.c5_memory.router import router as memory_router
 from cognitive_assistant.settings import settings
 from cognitive_assistant.shared.infrastructure.db import init_db_schema, dispose_db_engine
+from cognitive_assistant.shared.infrastructure.rate_limit import RateLimitMiddleware
 from cognitive_assistant.shared.infrastructure.redis_client import close_redis_client
 from cognitive_assistant.shared.telemetry.logging import setup_logging
 from cognitive_assistant.shared.telemetry.trace import TraceIDMiddleware
@@ -21,6 +24,7 @@ async def lifespan(app: FastAPI):
 
 
 def create_app() -> FastAPI:
+
     """Fábrica de la aplicación FastAPI para el núcleo transaccional."""
     setup_logging(settings.log_level)
 
@@ -30,10 +34,21 @@ def create_app() -> FastAPI:
         lifespan=lifespan,
     )
 
+    # Registro de Middlewares (el último añadido se ejecuta primero)
+    app.add_middleware(RateLimitMiddleware)
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=settings.cors_allowed_origins,
+        allow_credentials=True,
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
     app.add_middleware(TraceIDMiddleware)
+
     app.include_router(reception_router)
     app.include_router(memory_router)
 
     return app
+
 
 

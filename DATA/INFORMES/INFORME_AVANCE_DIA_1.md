@@ -293,3 +293,15 @@ MEMORY_USER_ID=default_user
    - Implementar el clasificador temprano de seguridad y sanitización de estímulos antes de alcanzar el Ejecutivo Cognitivo.
 3. **Capa 6: Especialistas y Ejecución de Herramientas:**
    - Vincular `PlaywrightBrowserTool` como una herramienta invocable de forma autónoma por los agentes especializados dentro del grafo de deliberación.
+
+---
+
+## 8. Errata y Actualización Posterior (08-10-2026)
+
+Sección añadida en la corrección documental global. Este informe es un registro histórico: las secciones 1–7 describen fielmente lo construido el Día 1; las siguientes correcciones aplican a partir de auditorías posteriores:
+
+1. **Taxonomía:** la referencia "8 Capas Funcionales y 3 Planos Transversales" queda reemplazada por la arquitectura objetivo de **10 Capas + 2 Planos** (`DATA/arquitectura_10_capas.md`, ADR 007). La numeración de capas citada en este informe (C2, C4, C5, C8) corresponde a la v1.0; equivalencias: antigua C4 -> vigentes C4+C5; antigua C5 -> C6; antigua C8 -> C10.
+2. **Puerto PostgreSQL:** la referencia al puerto `5432` quedó obsoleta el Día 2 (reasignado a `5433:5432` por colisión con `postgres.exe` nativo de Windows).
+3. **Estado de pruebas:** este informe documentó 15 passed + 1 skipped. El Día 2 reactivó `test_pgvector_db` y amplió la suite; el estado verificado más reciente está en el informe del Día 2.
+4. **Auditoría de seguridad (posterior):** `DATA/AUDITORIA&REPARACIÓN/AUDITORIA_SEGURIDAD_2026-10-08.md` (23 hallazgos, postura 3.5/10) evalúa este estado. Hallazgos críticos presentes ya al cierre del Día 1: endpoints sin autenticación (SEC-03/05/12), estímulo crudo hacia el LLM (SEC-06), `X-Trace-ID` cliente sin validar (SEC-17). Remediación: `DATA/AUDITORIA&REPARACIÓN/PROMPT_REMEDIACION_SEGURIDAD.md`.
+5. **Rate limiting:** las variables `RATE_LIMIT_*` documentadas aquí no tienen implementación asociada en el código (config declarada, código pendiente). Se corrige como hardening P1 en la remediación de seguridad.

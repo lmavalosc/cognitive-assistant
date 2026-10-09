@@ -47,19 +47,22 @@ class WorkingMemoryManager:
     DEFAULT_TTL: int = 86400  # 24 horas
 
     @classmethod
-    def _format_key(cls, session_id: str) -> str:
-        return f"session:{session_id}:working_memory"
+    def _format_key(cls, session_id: str, user_id: str = "default_user") -> str:
+        return f"user:{user_id}:session:{session_id}:wm"
 
     @classmethod
-    async def get_state(cls, session_id: str) -> WorkingMemoryState:
+    async def get_state(cls, session_id: str, user_id: str = "default_user") -> WorkingMemoryState:
         """Recupera el estado mental activo de la sesión. Si no existe, inicializa uno nuevo."""
-        key = cls._format_key(session_id)
+        key = cls._format_key(session_id, user_id)
         raw_data = await redis_get_json(key)
+        if not raw_data:
+            raw_data = await redis_get_json(f"session:{session_id}:working_memory")
+
         if raw_data:
             try:
                 return WorkingMemoryState.model_validate(raw_data)
             except Exception as exc:
-                logger.warning("Error deserializando WorkingMemoryState para %s: %s", session_id, exc)
+                logger.warning("Error deserializando WorkingMemoryState para %s (user=%s): %s", session_id, user_id, exc)
 
         return WorkingMemoryState(session_id=session_id)
 
@@ -70,12 +73,13 @@ class WorkingMemoryManager:
         role: Literal["user", "assistant", "system", "tool"],
         content: str,
         trace_id: str,
+        user_id: str = "default_user",
     ) -> WorkingMemoryState:
         """
         Agrega un turno conversacional aplicando la ventana deslizante (máximo MAX_TURNS).
         Actualiza el timestamp y persiste el estado en Redis.
         """
-        state = await cls.get_state(session_id)
+        state = await cls.get_state(session_id, user_id)
         new_turn = TurnRecord(role=role, content=content, trace_id=trace_id)
 
         state.recent_turns.append(new_turn)
@@ -86,45 +90,56 @@ class WorkingMemoryManager:
         if len(state.recent_turns) > cls.MAX_TURNS:
             state.recent_turns = state.recent_turns[-cls.MAX_TURNS :]
 
-        key = cls._format_key(session_id)
-        await redis_set_json(key, state.to_dict(), ttl_seconds=cls.DEFAULT_TTL)
+        key = cls._format_key(session_id, user_id)
+        payload = state.to_dict()
+        await redis_set_json(key, payload, ttl_seconds=cls.DEFAULT_TTL)
+        await redis_set_json(f"session:{session_id}:working_memory", payload, ttl_seconds=cls.DEFAULT_TTL)
         logger.debug(
-            "Turno añadido a memoria de trabajo para sesión '%s' (turnos activos=%d)",
+            "Turno añadido a memoria de trabajo para sesión '%s' (user='%s', turnos activos=%d)",
             session_id,
+            user_id,
             len(state.recent_turns),
         )
         return state
 
     @classmethod
-    async def set_active_goal(cls, session_id: str, goal: str) -> WorkingMemoryState:
+    async def set_active_goal(cls, session_id: str, goal: str, user_id: str = "default_user") -> WorkingMemoryState:
         """Establece el objetivo actual en el estado mental de la sesión."""
-        state = await cls.get_state(session_id)
+        state = await cls.get_state(session_id, user_id)
         state.active_goal = goal
         state.last_updated = datetime.now(timezone.utc).isoformat()
 
-        key = cls._format_key(session_id)
-        await redis_set_json(key, state.to_dict(), ttl_seconds=cls.DEFAULT_TTL)
+        key = cls._format_key(session_id, user_id)
+        payload = state.to_dict()
+        await redis_set_json(key, payload, ttl_seconds=cls.DEFAULT_TTL)
+        await redis_set_json(f"session:{session_id}:working_memory", payload, ttl_seconds=cls.DEFAULT_TTL)
         return state
 
     @classmethod
-    async def set_context_summary(cls, session_id: str, summary: str) -> WorkingMemoryState:
+    async def set_context_summary(cls, session_id: str, summary: str, user_id: str = "default_user") -> WorkingMemoryState:
         """Establece un resumen condensado del contexto histórico acumulado."""
-        state = await cls.get_state(session_id)
+        state = await cls.get_state(session_id, user_id)
         state.context_summary = summary
         state.last_updated = datetime.now(timezone.utc).isoformat()
 
-        key = cls._format_key(session_id)
-        await redis_set_json(key, state.to_dict(), ttl_seconds=cls.DEFAULT_TTL)
+        key = cls._format_key(session_id, user_id)
+        payload = state.to_dict()
+        await redis_set_json(key, payload, ttl_seconds=cls.DEFAULT_TTL)
+        await redis_set_json(f"session:{session_id}:working_memory", payload, ttl_seconds=cls.DEFAULT_TTL)
         return state
 
     @classmethod
-    async def get_recent_turns(cls, session_id: str, limit: int = 6) -> List[TurnRecord]:
+    async def get_recent_turns(cls, session_id: str, limit: int = 6, user_id: str = "default_user") -> List[TurnRecord]:
         """Devuelve los turnos conversacionales recientes de la sesión."""
-        state = await cls.get_state(session_id)
+        state = await cls.get_state(session_id, user_id)
         return state.recent_turns[-limit:]
 
     @classmethod
-    async def clear_session(cls, session_id: str) -> bool:
+    async def clear_session(cls, session_id: str, user_id: str = "default_user") -> bool:
         """Elimina el estado mental de la sesión."""
-        key = cls._format_key(session_id)
-        return await redis_delete_key(key)
+        key = cls._format_key(session_id, user_id)
+        r1 = await redis_delete_key(key)
+        r2 = await redis_delete_key(f"session:{session_id}:working_memory")
+        return r1 or r2
+
+

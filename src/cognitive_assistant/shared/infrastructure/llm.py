@@ -58,7 +58,7 @@ class LLMGateway:
         # Si mock_fallback está activo y no hay API Key ni API Base local configurada
         if self.mock_fallback and not self.api_key and not self.api_base:
             logger.warning(
-                "Sin API Key o Endpoint configurado; ejecutando modo mock_fallback para modelo '%s'",
+                "Sin API Key o Endpoint configurado; ejecutando modo mock_fallback (simulación) para modelo '%s'",
                 target_model,
             )
             user_msg = messages[-1].get("content", "") if messages else ""
@@ -72,6 +72,7 @@ class LLMGateway:
                 "model": target_model,
                 "usage": {"prompt_tokens": len(user_msg.split()), "completion_tokens": 20, "total_tokens": len(user_msg.split()) + 20},
                 "trace_id": trace_id,
+                "mock": True,
                 "provider": "mock-gateway",
             }
 
@@ -97,21 +98,24 @@ class LLMGateway:
                 "model": target_model,
                 "usage": usage,
                 "trace_id": trace_id,
+                "mock": False,
                 "provider": getattr(response, "model", target_model),
             }
         except Exception as exc:
             logger.error("Error en llamada a LiteLLM: %s", exc)
             if self.mock_fallback:
-                logger.info("Aplicando fallback ante error de conexión externa.")
+                logger.warning("Aplicando fallback ante error de conexión externa con LLM.")
                 return {
-                    "content": f"[Fallback ante excepción] Error externo: {type(exc).__name__}. Traza: {trace_id}",
+                    "content": f"[Fallback ante excepción] Error en proveedor LLM. Traza: {trace_id}",
                     "model": target_model,
                     "usage": {},
                     "trace_id": trace_id,
-                    "error": str(exc),
+                    "mock": True,
+                    "error": "ExternalLLMError",
                     "provider": "fallback",
                 }
             raise
+
 
 
 _llm_gateway_instance: Optional[LLMGateway] = None

@@ -1,9 +1,9 @@
-"""Rutas HTTP para la Capa 5: Memoria Persistente."""
 from typing import List, Optional
-from fastapi import APIRouter, Query, status
+from fastapi import APIRouter, Depends, Query, status
 from pydantic import BaseModel, Field
 
 from cognitive_assistant.modules.c5_memory.service import get_memory_service
+from cognitive_assistant.shared.infrastructure.auth import Principal, require_api_key
 from cognitive_assistant.shared.telemetry.logging import get_logger
 from cognitive_assistant.shared.telemetry.trace import get_trace_id
 
@@ -13,7 +13,7 @@ logger = get_logger("cognitive_assistant.memory.router")
 
 class AddMemoryBody(BaseModel):
     content: str = Field(..., min_length=1, description="Contenido a recordar")
-    user_id: str = Field(default="default_user", description="Identificador del usuario")
+    user_id: Optional[str] = Field(default=None, description="Identificador del usuario")
     metadata: dict = Field(default_factory=dict, description="Metadatos")
 
 
@@ -36,12 +36,16 @@ class SearchMemoryResponse(BaseModel):
     status_code=status.HTTP_201_CREATED,
     summary="Almacenar un nuevo recuerdo o preferencia",
 )
-async def add_memory(payload: AddMemoryBody) -> AddMemoryResponse:
+async def add_memory(
+    payload: AddMemoryBody,
+    principal: Principal = Depends(require_api_key),
+) -> AddMemoryResponse:
     trace_id = get_trace_id()
     service = get_memory_service()
+    effective_user_id = principal.user_id if principal.api_key != "local-dev" else (payload.user_id or principal.user_id)
     stored = await service.add(
         content=payload.content,
-        user_id=payload.user_id,
+        user_id=effective_user_id,
         metadata=payload.metadata,
     )
     return AddMemoryResponse(trace_id=trace_id, items=stored)
@@ -55,13 +59,15 @@ async def add_memory(payload: AddMemoryBody) -> AddMemoryResponse:
 )
 async def search_memories(
     q: str = Query(..., min_length=1, description="Texto de búsqueda"),
-    user_id: str = Query(default="default_user", description="Usuario"),
+    user_id: Optional[str] = Query(default=None, description="Usuario (ignorado bajo autenticación estricta)"),
     limit: int = Query(default=5, ge=1, le=20, description="Límite"),
+    principal: Principal = Depends(require_api_key),
 ) -> SearchMemoryResponse:
     trace_id = get_trace_id()
     service = get_memory_service()
-    results = await service.search(query=q, user_id=user_id, limit=limit)
-    return SearchMemoryResponse(trace_id=trace_id, query=q, user_id=user_id, results=results)
+    effective_user_id = principal.user_id if principal.api_key != "local-dev" else (user_id or principal.user_id)
+    results = await service.search(query=q, user_id=effective_user_id, limit=limit)
+    return SearchMemoryResponse(trace_id=trace_id, query=q, user_id=effective_user_id, results=results)
 
 
 @router.get(
@@ -71,9 +77,12 @@ async def search_memories(
     summary="Listar todas las memorias del usuario",
 )
 async def get_all_memories(
-    user_id: str = Query(default="default_user", description="Usuario"),
+    user_id: Optional[str] = Query(default=None, description="Usuario (ignorado bajo autenticación estricta)"),
+    principal: Principal = Depends(require_api_key),
 ) -> SearchMemoryResponse:
     trace_id = get_trace_id()
     service = get_memory_service()
-    results = await service.get_all(user_id=user_id)
-    return SearchMemoryResponse(trace_id=trace_id, query="*", user_id=user_id, results=results)
+    effective_user_id = principal.user_id if principal.api_key != "local-dev" else (user_id or principal.user_id)
+    results = await service.get_all(user_id=effective_user_id)
+    return SearchMemoryResponse(trace_id=trace_id, query="*", user_id=effective_user_id, results=results)
+

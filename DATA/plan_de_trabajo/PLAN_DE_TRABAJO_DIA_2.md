@@ -3,8 +3,16 @@
 **Documento Técnico:** `TR-COG-2026-PLAN-D2` / `DATA/plan_de_trabajo/PLAN_DE_TRABAJO_DIA_2.md`  
 **Metodología:** *Core-to-Periphery* + Monolito Modular Hexagonal  
 **Rama Git:** `semana1-tronco-encefalico` (Cierre Día 1: Commit `710c99f`)  
-**Fecha de Elaboración:** 08 de Octubre, 2026  
-**Autor:** Moisés  
+**Fecha de Elaboración:** 08 de Octubre, 2026
+**Autor:** Moisés
+
+> **ACTUALIZACIÓN Y CORRECCIÓN — 08-10-2026 (vinculante, leer primero):**
+> 1. **Taxonomía:** arquitectura vigente de **10 Capas + 2 Planos** (`DATA/arquitectura_10_capas.md`, ADR 007). En este documento: "Capa 4" -> vigentes C4 (memoria de trabajo) + C5 (ejecutivo); "Capa 6/7" -> vigentes C7 (agentes) + C8 (sandbox).
+> 2. **Puerta de seguridad:** la **FASE 4 queda BLOQUEADA** hasta completar la remediación P0 (`DATA/AUDITORIA&REPARACIÓN/AUDITORIA_SEGURIDAD_2026-10-08.md`, `DATA/AUDITORIA&REPARACIÓN/PROMPT_REMEDIACION_SEGURIDAD.md`): Capa 3 (PromptGuard + 403 RFC 7807), autenticación por API key con user_id derivado, y validador anti-SSRF en las herramientas web. Razón: sin C3, cablear herramientas encadena prompt injection -> envenenamiento de memoria -> SSRF.
+> 3. **Correcciones de la Fase 3/4 ya detectadas en auditoría:** `max_length=8000` faltante en contratos; `user_id`/`session_id` autodeclarados (SEC-05) — la Etapa 3.3 y las claves Redis de la 2.2 deberán incorporar namespace por usuario; timeout de Playwright en 20000 ms (Etapa 4.3 sigue pendiente; ahora forma parte de la Parte C de la remediación, no de la Fase 4).
+> 4. **La Fase 3 absorbió los P0/P1** del prompt de remediación (especificados allí como Partes A-D). Este plan queda como especificación funcional; la especificación operativa de implementación es `DATA/AUDITORIA&REPARACIÓN/PROMPT_REMEDIACION_SEGURIDAD.md`.
+>
+> A partir de aquí, el contenido original se conserva.
 
 ---
 

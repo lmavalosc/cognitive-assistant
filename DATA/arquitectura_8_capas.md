@@ -1,5 +1,17 @@
 # Arquitectura del Sistema: 8 Capas Funcionales y 3 Planos Transversales
 
+> **⚠️ ESTADO: DOCUMENTO HISTÓRICO (v1.0) — REEMPLAZADO EL 08-10-2026**
+>
+> La taxonomía vigente es **10 Capas Funcionales + 2 Planos Transversales**:
+> ver [`arquitectura_10_capas.md`](./arquitectura_10_capas.md) (documento canon v2.1)
+> y [`adr/007_evolucion_8_a_10_capas.md`](./adr/007_evolucion_8_a_10_capas.md).
+>
+> Este archivo se conserva sin cambios de contenido como registro del diseño original.
+> Defectos estructurales detectados en esta versión: (1) Capa 4 con cuatro
+> responsabilidades simultáneas ("capa dios"), (2) Plano C era una capa funcional
+> disfrazada de transversal, (3) gobernanza de un solo punto (solo entrada),
+> (4) cascada lineal sin bucles de retroalimentación documentados.
+
 ## 1. Visión de la Taxonomía
 
 El sistema organiza el procesamiento cognitivo en una secuencia determinista de 8 capas funcionales asistidas transversalmente por 3 planos de sustrato y auditoría.

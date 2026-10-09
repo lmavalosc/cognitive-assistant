@@ -14,7 +14,7 @@ class HealthResponse(BaseModel):
 class ReceptionMessageRequest(BaseModel):
     """Esquema de entrada para recepción de eventos/mensajes transaccionales."""
 
-    content: str = Field(..., min_length=1, description="Contenido del mensaje a procesar")
+    content: str = Field(..., min_length=1, max_length=8000, description="Contenido del mensaje a procesar")
     source: str = Field(default="user", description="Origen del mensaje")
     metadata: Dict[str, Any] = Field(default_factory=dict, description="Metadatos contextuales adicionales")
 
@@ -31,10 +31,11 @@ class ReceptionMessageResponse(BaseModel):
 class DeliberateRequest(BaseModel):
     """Petición para ciclo deliberativo completo (C2 -> C5 -> C4 -> Plano A -> C8)."""
 
-    content: str = Field(..., min_length=1, description="Estímulo o mensaje de entrada a procesar")
+    content: str = Field(..., min_length=1, max_length=8000, description="Estímulo o mensaje de entrada a procesar")
     user_id: str = Field(default="default_user", description="Identificador del usuario")
     session_id: str = Field(default="default_session", description="Identificador de la sesión para memoria de trabajo en Redis")
     metadata: Dict[str, Any] = Field(default_factory=dict, description="Metadatos de contexto")
+
 
 
 class DeliberateResponse(BaseModel):

@@ -2,7 +2,20 @@
 ## Cronograma de Ejecución: 2 Meses (8 Semanas / 40 Días Hábiles)
 **Documento Técnico Asociado:** `TR-COG-2026-ARCH-V2.0` / `TR-COG-2026-PLAN-V2.0`  
 **Metodología:** *Core-to-Periphery* (Del núcleo a la periferia) + Monolito Modular Hexagonal  
-**Meta:** Desarrollo integral de las 8 Capas Funcionales y 3 Planos Transversales con validación de los 7 Escenarios Experimentales.
+**Meta:** Desarrollo integral de las **10 Capas Funcionales y 2 Planos Transversales** (taxonomía vigente v2.1, ver `DATA/arquitectura_10_capas.md` y ADR 007) con validación de los 7 Escenarios Experimentales.
+
+---
+
+## 0. ACTUALIZACIÓN Y CORRECCIÓN — 08 de Octubre, 2026 (vinculante)
+
+Sección incorporada en la corrección documental global. Aplica sobre todo el plan:
+
+1. **Base taxonómica:** donde este plan diga "8 Capas + 3 Planos", léase la taxonomía v2.1 de **10 Capas + 2 Planos**. Equivalencias oficiales: antigua C4 -> vigentes **C4 (memoria de trabajo)** + **C5 (ejecutivo)**; antigua C5 -> **C6**; antigua C6 -> **C7**; antigua C7 -> **C8**; antigua C8 -> **C10**; antiguo Plano C -> **Capa 9**. Planos transversales vigentes: A (Infraestructura) y B (Observabilidad/Auditoría).
+2. **Orden de dependencia corregido (no negociable):** **Gobernanza (C3) -> Sandbox (C8) -> Herramientas autónomas (ciclo ReAct)**. La Fase 4 del Día 2 y todo cableado de herramientas quedan **BLOQUEADOS** hasta completar la remediación P0 (`DATA/AUDITORIA&REPARACIÓN/AUDITORIA_SEGURIDAD_2026-10-08.md`, `DATA/AUDITORIA&REPARACIÓN/PROMPT_REMEDIACION_SEGURIDAD.md`). Las herramientas web creadas el Día 1 se reclasifican como scaffolding latente, no capacidad operativa.
+3. **Corrección del Hito Etapa 1:** el criterio "Rate limiting Token Bucket sobre Redis" (Día 05) **no fue implementado**; las variables `RATE_LIMIT_*` no tienen consumidor en el código (hallazgo SEC-02). El Hito Etapa 1 queda en estado **PARCIAL**. Regla permanente: *hito superado = test de escenario en verde*, nunca una declaración en documento.
+4. **Contrato público pendiente:** el endpoint canónico `POST /api/v1/chat` (exigido en Semana 1 y Semana 3) no existe; la API real expone `/reception/message` y `/reception/deliberate`. Crearlo como alias es prerrequisito de la Semana 3 (canales externos).
+5. **Identidad:** todo `user_id`/`session_id` autodeclarado es defecto de seguridad (SEC-05); las capas deben asumir identidad derivada de autenticación.
+6. **Capa 3 ampliada (v2.1):** la Semana 5 incluye tres puntos de control: entrada (PromptGuard), acción (policy check por ToolRequest) y salida (filtro de fuga PII/secretos en respuesta y en consolidación de memoria).
 
 ---
 

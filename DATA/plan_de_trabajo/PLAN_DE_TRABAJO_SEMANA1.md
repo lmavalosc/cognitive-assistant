@@ -1,3 +1,15 @@
+# PLAN DE TRABAJO — SEMANA 1: Tronco Encefálico e Infraestructura (Etapa 1)
+
+> **ACTUALIZACIÓN Y CORRECCIÓN — 08-10-2026 (vinculante, leer primero):**
+> 1. **Taxonomía vigente:** 10 Capas + 2 Planos (`DATA/arquitectura_10_capas.md`, ADR 007). Las referencias "Capa 2 / Capa 8" de este documento siguen la numeración histórica v1.0; equivalencias en el documento canon (antigua C8 -> vigente C10).
+> 2. **Día 05 NO cumplido:** el rate limiting Token Bucket no existe en el código (solo variables `RATE_LIMIT_*` sin consumidor — hallazgo SEC-02 de `DATA/AUDITORIA&REPARACIÓN/AUDITORIA_SEGURIDAD_2026-10-08.md`). El Hito Etapa 1 queda en estado **PARCIAL** hasta su implementación (P1 de la remediación). Nueva regla: hito superado = test en verde.
+> 3. **Contrato pendiente:** `POST /api/v1/chat` nunca se implementó; la API real es `/reception/message` y `/reception/deliberate`. Queda como tarea correctiva antes de Semana 3.
+> 4. **Seguridad:** este plan no incluía autenticación ni gobernanza; ambas entran por la remediación P0 (`DATA/AUDITORIA&REPARACIÓN/PROMPT_REMEDIACION_SEGURIDAD.md`), prerrequisito para cualquier herramienta autónoma.
+>
+> A partir de aquí, el contenido original se conserva como registro del plan tal como fue redactado.
+
+---
+
 Perfecto. Tomo como base el archivo **`PLAN_DE_TRABAJO_8_SEMANAS.md`** que subiste.
 
 La **Semana 1** corresponde a:
