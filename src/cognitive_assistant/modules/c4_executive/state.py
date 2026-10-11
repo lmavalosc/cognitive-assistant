@@ -22,5 +22,7 @@ class CognitiveState(TypedDict):
     filter_reason: Optional[str]
     pending_tool_calls: Optional[List[Dict[str, Any]]]
     tool_results: Optional[List[Dict[str, Any]]]
+    iteration_count: Optional[int]
+    max_iterations: Optional[int]
 
 

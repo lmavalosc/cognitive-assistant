@@ -80,6 +80,7 @@ _SAFE_OPERATORS = {
     ast.FloorDiv: operator.floordiv,
     ast.Mod: operator.mod,
     ast.Pow: operator.pow,
+    ast.BitXor: operator.pow,  # Soporte de potencia en notación matemática estándar
     ast.UAdd: operator.pos,
     ast.USub: operator.neg,
 }
@@ -115,7 +116,7 @@ def _eval_ast_node(node: ast.AST) -> float:
         if op_type in _SAFE_OPERATORS:
             left_val = _eval_ast_node(node.left)
             right_val = _eval_ast_node(node.right)
-            if op_type == ast.Pow and (abs(right_val) > 100 or abs(left_val) > 10000):
+            if op_type in (ast.Pow, ast.BitXor) and (abs(right_val) > 100 or abs(left_val) > 10000):
                 raise ValueError("Exponente o base excede los límites de seguridad numérica.")
             if op_type in (ast.Div, ast.FloorDiv, ast.Mod) and right_val == 0:
                 raise ZeroDivisionError("División por cero no permitida.")
@@ -136,7 +137,10 @@ async def safe_calculator_handler(expression: str) -> Dict[str, Any]:
     if len(clean_expr) > 200:
         raise ValueError("La expresión matemática excede el límite de 200 caracteres.")
 
-    parsed = ast.parse(clean_expr, mode="eval")
+    # Normalizar notación matemática estándar: convertir '^' en '**' para preservar precedencia
+    normalized_expr = re.sub(r"\^", "**", clean_expr)
+
+    parsed = ast.parse(normalized_expr, mode="eval")
     result = _eval_ast_node(parsed)
     return {
         "expression": clean_expr,

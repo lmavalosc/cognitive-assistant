@@ -62,12 +62,39 @@ async def deliberate_and_plan_node(state: CognitiveState) -> Dict[str, Any]:
     """
     Nodo 2: Delibera, formula plan cognitivo y determina si requiere herramientas externas (ReAct).
     Si se detecta intención de cálculo o percepción web, emite ToolRequests pendientes.
+    En iteraciones subsiguientes (ReAct), observa los resultados de las herramientas y sintetiza.
     """
     input_message = state.get("input_message", "")
     memories = state.get("context_memories", [])
     history = state.get("dialogue_history", [])
     metadata = state.get("metadata", {})
     trace_id = state.get("trace_id") or get_trace_id()
+    iteration_count = state.get("iteration_count") or 0
+    max_iterations = state.get("max_iterations") or 3
+    tool_results = state.get("tool_results") or []
+
+    # FASE DE OBSERVACIÓN Y REFLEXIÓN (Ciclo ReAct tras retorno de execute_tools)
+    if tool_results and iteration_count > 0:
+        logger.info(
+            "Nodo [Deliberación ReAct - Observación]: analizando %d resultado(s) de herramientas (iteración %d/%d)",
+            len(tool_results),
+            iteration_count,
+            max_iterations,
+        )
+        plan = list(state.get("plan", []))
+        plan.append(f"Observación ReAct (iteración {iteration_count}): resultados evaluados y plan sintetizado.")
+
+        return {
+            "intent": "action_synthesized",
+            "plan": plan,
+            "response": state.get("response", ""),
+            "status": "deliberated",
+            "pending_tool_calls": [],  # Concluye el ciclo de llamadas para pasar a consolidación
+            "tool_results": tool_results,
+            "iteration_count": iteration_count,
+            "max_iterations": max_iterations,
+            "trace_id": trace_id,
+        }
 
     logger.info("Nodo [Deliberación y Plan]: analizando estímulo (turnos en historial=%d)", len(history))
 
@@ -78,11 +105,11 @@ async def deliberate_and_plan_node(state: CognitiveState) -> Dict[str, Any]:
         for tc in metadata["tool_calls"]:
             pending_tool_calls.append(tc)
 
-    # 2. Detección heurística de cálculo aritmético
-    calc_match = re.search(r"(?:calcula|cu[aá]nto es|eval[uú]a|calculate)\s+([0-9\.\s\+\-\*\/\(\)\^%]+)", input_message, re.IGNORECASE)
+    # 2. Detección heurística de cálculo aritmético (incluyendo funciones como sqrt, abs, etc.)
+    calc_match = re.search(r"(?:calcula|cu[aá]nto es|eval[uú]a|calculate)\s+([0-9a-zA-Z_\.\s\+\-\*\/\(\)\^%]+)", input_message, re.IGNORECASE)
     if not calc_match:
         # Match directo de expresión numérica como "25 * 40"
-        calc_match = re.match(r"^\s*([0-9\.\s\+\-\*\/\(\)\^%]{3,})\s*$", input_message)
+        calc_match = re.match(r"^\s*([0-9a-zA-Z_\.\s\+\-\*\/\(\)\^%]{3,})\s*$", input_message)
 
     if calc_match:
         expr = calc_match.group(1).strip()
@@ -126,6 +153,8 @@ async def deliberate_and_plan_node(state: CognitiveState) -> Dict[str, Any]:
             "status": "tools_requested",
             "pending_tool_calls": pending_tool_calls,
             "tool_results": [],
+            "iteration_count": iteration_count,
+            "max_iterations": max_iterations,
             "trace_id": trace_id,
         }
 
@@ -163,6 +192,8 @@ async def deliberate_and_plan_node(state: CognitiveState) -> Dict[str, Any]:
         "status": "deliberated",
         "pending_tool_calls": [],
         "tool_results": [],
+        "iteration_count": iteration_count,
+        "max_iterations": max_iterations,
         "trace_id": trace_id,
     }
 
@@ -170,7 +201,10 @@ async def deliberate_and_plan_node(state: CognitiveState) -> Dict[str, Any]:
 def should_use_tool(state: CognitiveState) -> str:
     """Arista condicional ReAct: decide si derivar a ejecución de herramientas o a consolidación."""
     pending = state.get("pending_tool_calls") or []
-    if len(pending) > 0:
+    iteration_count = state.get("iteration_count") or 0
+    max_iterations = state.get("max_iterations") or 3
+
+    if len(pending) > 0 and iteration_count < max_iterations:
         return "execute_tools"
     return "consolidate_memory"
 
@@ -201,15 +235,18 @@ async def execute_tools_node(state: CognitiveState) -> Dict[str, Any]:
 
     for call in pending_calls:
         tool_name = call.get("tool_name", "")
-        args = call.get("arguments", {})
+        args = dict(call.get("arguments", {}))
 
+        # CONTROL DE SEGURIDAD ESTRICTO (Anti-Spoofing):
+        # hitl_approved se adopta exclusivamente desde el contexto confiable del servidor (metadata),
+        # jamás desde los argumentos generados por el modelo o un cliente.
         req = ToolRequest(
             tool_name=tool_name,
             arguments=args,
             trace_id=trace_id,
             user_id=user_id,
             session_id=session_id,
-            hitl_approved=hitl_approved or bool(args.get("hitl_approved", False)),
+            hitl_approved=hitl_approved,
         )
 
         tool_def = tool_registry.get_tool(tool_name)
@@ -252,9 +289,11 @@ async def execute_tools_node(state: CognitiveState) -> Dict[str, Any]:
 
     synthesized_response = "\n\n".join(synthesized_fragments)
 
-    plan = state.get("plan", [])
+    plan = list(state.get("plan", []))
     plan.append(f"4. Ejecución ReAct completada ({len(tool_results)} acción/acciones evaluadas).")
-    plan.append("5. Síntesis perceptual y respuesta estructurada generada.")
+    plan.append("5. Síntesis perceptual generada; derivando a deliberación para observación reflexiva.")
+
+    new_iteration = (state.get("iteration_count") or 0) + 1
 
     return {
         "pending_tool_calls": [],
@@ -262,6 +301,8 @@ async def execute_tools_node(state: CognitiveState) -> Dict[str, Any]:
         "response": synthesized_response,
         "status": "tools_executed",
         "plan": plan,
+        "iteration_count": new_iteration,
+        "max_iterations": state.get("max_iterations") or 3,
         "trace_id": trace_id,
     }
 
@@ -275,6 +316,8 @@ async def consolidate_memory_node(state: CognitiveState) -> Dict[str, Any]:
     input_message = state.get("input_message", "")
     response = state.get("response", "")
     trace_id = state.get("trace_id") or get_trace_id()
+    iteration_count = state.get("iteration_count", 0)
+    max_iterations = state.get("max_iterations", 3)
 
     logger.info("Nodo [Consolidación]: actualizando memoria de trabajo en Redis para sesión '%s' (user='%s')", session_id, user_id)
 
@@ -310,6 +353,8 @@ async def consolidate_memory_node(state: CognitiveState) -> Dict[str, Any]:
             "trace_id": trace_id,
             "sensitive_data_filtered": True,
             "filter_reason": reason,
+            "iteration_count": iteration_count,
+            "max_iterations": max_iterations,
         }
 
     memory_service = get_memory_service()
@@ -325,11 +370,13 @@ async def consolidate_memory_node(state: CognitiveState) -> Dict[str, Any]:
         "trace_id": trace_id,
         "sensitive_data_filtered": False,
         "filter_reason": None,
+        "iteration_count": iteration_count,
+        "max_iterations": max_iterations,
     }
 
 
 def build_cognitive_graph() -> Any:
-    """Construye y compila el StateGraph de LangGraph con bifurcación ReAct para el Ejecutivo Cognitivo."""
+    """Construye y compila el StateGraph de LangGraph con ciclo ReAct completo para el Ejecutivo Cognitivo."""
     builder = StateGraph(CognitiveState)
 
     # Añadir nodos
@@ -349,7 +396,8 @@ def build_cognitive_graph() -> Any:
             "consolidate_memory": "consolidate_memory",
         },
     )
-    builder.add_edge("execute_tools", "consolidate_memory")
+    # Ciclo ReAct: después de ejecutar herramientas, retorna a deliberate_and_plan para observar
+    builder.add_edge("execute_tools", "deliberate_and_plan")
     builder.add_edge("consolidate_memory", END)
 
     return builder.compile()
@@ -396,6 +444,8 @@ async def execute_cognitive_cycle(
         "filter_reason": None,
         "pending_tool_calls": [],
         "tool_results": [],
+        "iteration_count": 0,
+        "max_iterations": 3,
     }
 
     logger.info("Iniciando ciclo cognitivo en LangGraph para trace_id=%s, session_id=%s", trace_id, session_id)

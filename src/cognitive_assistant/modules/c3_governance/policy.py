@@ -75,6 +75,23 @@ class ActionPolicyService:
                 trace_id=current_trace,
             )
 
+        # 1.1 Detección de manipulación de autorización en argumentos (Anti-Spoofing)
+        if "hitl_approved" in request.arguments:
+            logger.warning(
+                "GOBERNANZA DE ACCIÓN (3.b) BLOQUEADA [EVASIÓN DE SEGURIDAD]: Intento de auto-autorización en arguments para tool='%s' (trace_id=%s)",
+                request.tool_name,
+                current_trace,
+            )
+            return ActionPolicyDecision(
+                allowed=False,
+                risk_level=ToolRiskLevel.CRITICAL,
+                requires_hitl=True,
+                violation_type="security_evasion_attempt",
+                reason="Intento de manipulación de autorización: el parámetro 'hitl_approved' no puede suministrarse dentro de los argumentos de la herramienta.",
+                trace_id=current_trace,
+                metadata={"tool_name": request.tool_name},
+            )
+
         risk_level = tool_definition.risk_level
 
         # 2. Validación anti-SSRF en argumentos que representen URLs

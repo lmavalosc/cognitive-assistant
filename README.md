@@ -1,6 +1,6 @@
-# Asistente Cognitivo — Etapa 1: Núcleo Transaccional (Tronco Encefálico)
+# Asistente Cognitivo Modular (Tronco Encefálico + Ejecutivo Cognitivo ReAct)
 
-Implementación mínima ejecutable y robusta del **Tronco Encefálico** (Núcleo Transaccional) para la tesis de Asistente Cognitivo, siguiendo el principio arquitectónico **Core-to-Periphery**.
+Implementación ejecutable del **Asistente Cognitivo Modular** para la tesis de grado, siguiendo el principio arquitectónico **Core-to-Periphery** y la taxonomía de **10 Capas Funcionales + 2 Planos Transversales** ([`DATA/arquitectura_10_capas.md`](DATA/arquitectura_10_capas.md), [`DATA/adr/007_evolucion_8_a_10_capas.md`](DATA/adr/007_evolucion_8_a_10_capas.md)). Consulte la [Matriz de Trazabilidad y Verificación de Fase 4](FASE_4_MATRIZ_TRAZABILIDAD.md).
 
 > **Arquitectura objetivo (vigente desde el 08-10-2026):** **10 Capas Funcionales + 2 Planos Transversales**, definida en [`DATA/arquitectura_10_capas.md`](DATA/arquitectura_10_capas.md) y aprobada en [`DATA/adr/007_evolucion_8_a_10_capas.md`](DATA/adr/007_evolucion_8_a_10_capas.md). Los nombres de módulos actuales (`c2_`, `c4_`, `c5_`, `c8_`) corresponden a la numeración histórica de la v1.0 y se migrarán por alias, nunca por renombrado destructivo.
 
@@ -67,6 +67,9 @@ cognitive-assistant/
 │               └── dispatcher.py
 │
 └── tests/
+    ├── test_tool_registry.py                   # Tests de contratos de herramientas y cálculo AST (Fase 4)
+    ├── test_governance_action.py               # Tests de políticas de acción, anti-SSRF y HITL (Fase 4)
+    ├── test_react_cycle.py                     # Tests del ciclo ReAct completo en LangGraph (Fase 4)
     ├── test_health.py                          # Tests de salud y versión
     ├── test_trace.py                           # Tests de propagación de trace_id
     ├── test_llm_gateway.py                     # Tests de inferencia LiteLLM y fallback
