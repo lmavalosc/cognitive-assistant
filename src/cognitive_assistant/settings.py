@@ -27,10 +27,11 @@ class Settings(BaseSettings):
     api_keys: list[str] = []
     cors_allowed_origins: list[str] = ["http://localhost:3000", "http://localhost:8000"]
 
-    # Plano A: LLM Gateway (LiteLLM)
-    default_llm_model: str = "gpt-4o-mini"
+    # Plano A: LLM Gateway (LiteLLM con Gemini API)
+    default_llm_model: str = "gemini/gemini-2.5-flash"
     llm_temperature: float = 0.2
     llm_api_key: str | None = None
+    gemini_api_key: str | None = None
     llm_api_base: str | None = None
     llm_mock_fallback: bool = True
 

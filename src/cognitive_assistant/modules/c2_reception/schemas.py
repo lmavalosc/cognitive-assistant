@@ -48,3 +48,14 @@ class DeliberateResponse(BaseModel):
     plan: list[str] = Field(default_factory=list, description="Plan cognitivo formulado por LangGraph")
     context_memories: list[str] = Field(default_factory=list, description="Recuerdos recuperados desde mem0")
     dispatched: bool = Field(default=True, description="Indica si el efector C8 fue notificado")
+
+
+# Contratos canónicos para el endpoint unificado POST /api/v1/chat
+class ChatRequest(DeliberateRequest):
+    """Petición canónica unificada para el endpoint POST /api/v1/chat."""
+    pass
+
+
+class ChatResponse(DeliberateResponse):
+    """Respuesta canónica unificada para el endpoint POST /api/v1/chat."""
+    pass

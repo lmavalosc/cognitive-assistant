@@ -4,13 +4,15 @@ from fastapi import APIRouter, Depends, Request, status
 from fastapi.responses import JSONResponse
 
 from cognitive_assistant.modules.c2_reception.schemas import (
+    ChatRequest,
+    ChatResponse,
     DeliberateRequest,
     DeliberateResponse,
     HealthResponse,
     ReceptionMessageRequest,
     ReceptionMessageResponse,
 )
-from cognitive_assistant.modules.c3_governance.service import GovernanceService
+from cognitive_assistant.modules.c3_governance import GovernanceService, OutputGuard
 from cognitive_assistant.modules.c4_executive.graph import execute_cognitive_cycle
 from cognitive_assistant.modules.c8_effectors.dispatcher import EffectorDispatcher
 from cognitive_assistant.settings import settings
@@ -194,18 +196,25 @@ async def deliberate_message(
         metadata=payload.metadata,
     )
 
-    # 3. Capa 8: Despachar a efectores
+    raw_response = final_state.get("response", "")
+
+    # 3. Capa 3.c: Filtro Perimétrico de Salida (Output Guard)
+    # Inspecciona y sanitiza cualquier intento de fuga de credenciales, API keys o PII
+    output_eval = OutputGuard.filter_response(raw_response, trace_id=current_trace)
+    safe_response = output_eval.sanitized_content
+
+    # 4. Capa 8: Despachar a efectores con respuesta segura
     dispatcher = EffectorDispatcher()
     await dispatcher.dispatch(
         event_type="cognitive.response",
         payload={
-            "response": final_state.get("response", ""),
+            "response": safe_response,
             "plan": final_state.get("plan", []),
             "user_id": effective_user_id,
             "session_id": payload.session_id,
+            "leak_detected": output_eval.leak_detected,
         },
     )
-
 
     duration_ms = (time.perf_counter() - start_time) * 1000.0
     await AuditService.record_transaction(
@@ -220,15 +229,17 @@ async def deliberate_message(
             "user_id": payload.user_id,
             "plan_steps": len(final_state.get("plan", [])),
             "risk_score": evaluation.risk_score,
+            "output_leak_detected": output_eval.leak_detected,
+            "output_leak_reasons": output_eval.reasons,
         },
-        security_violation=False,
+        security_violation=output_eval.leak_detected,
     )
 
     return DeliberateResponse(
         status=final_state.get("status", "completed"),
         trace_id=current_trace,
         session_id=payload.session_id,
-        response=final_state.get("response", ""),
+        response=safe_response,
         plan=final_state.get("plan", []),
         context_memories=final_state.get("context_memories", []),
         dispatched=True,

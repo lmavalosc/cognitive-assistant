@@ -29,7 +29,11 @@ class LLMGateway:
     ) -> None:
         self.default_model = default_model or settings.default_llm_model
         self.temperature = temperature if temperature is not None else settings.llm_temperature
-        self.api_key = api_key or settings.llm_api_key
+        self.api_key = api_key or (
+            settings.gemini_api_key
+            if (default_model or settings.default_llm_model).startswith("gemini")
+            else settings.llm_api_key
+        )
         self.api_base = api_base or settings.llm_api_base
         self.mock_fallback = mock_fallback if mock_fallback is not None else settings.llm_mock_fallback
 
@@ -47,6 +51,13 @@ class LLMGateway:
         target_temp = temperature if temperature is not None else self.temperature
         trace_id = get_trace_id()
 
+        target_api_key = kwargs.pop("api_key", None)
+        if not target_api_key:
+            if target_model.startswith("gemini"):
+                target_api_key = self.api_key or settings.gemini_api_key or settings.llm_api_key
+            else:
+                target_api_key = self.api_key or settings.llm_api_key
+
         logger.info(
             "Invocando LLM Gateway: modelo='%s', temp=%.2f, mensajes=%d, trace_id=%s",
             target_model,
@@ -56,7 +67,7 @@ class LLMGateway:
         )
 
         # Si mock_fallback está activo y no hay API Key ni API Base local configurada
-        if self.mock_fallback and not self.api_key and not self.api_base:
+        if self.mock_fallback and not target_api_key and not self.api_base:
             logger.warning(
                 "Sin API Key o Endpoint configurado; ejecutando modo mock_fallback (simulación) para modelo '%s'",
                 target_model,
@@ -82,8 +93,8 @@ class LLMGateway:
             "temperature": target_temp,
             **kwargs,
         }
-        if self.api_key:
-            call_kwargs["api_key"] = self.api_key
+        if target_api_key:
+            call_kwargs["api_key"] = target_api_key
         if self.api_base:
             call_kwargs["api_base"] = self.api_base
 

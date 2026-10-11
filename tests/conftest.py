@@ -1,3 +1,4 @@
+from unittest.mock import AsyncMock, patch
 import pytest
 import pytest_asyncio
 from fastapi.testclient import TestClient
@@ -5,6 +6,15 @@ from httpx import ASGITransport, AsyncClient
 from cognitive_assistant.app import create_app
 from cognitive_assistant.shared.infrastructure.db import dispose_db_engine
 from cognitive_assistant.shared.infrastructure.redis_client import close_redis_client
+
+
+@pytest.fixture(autouse=True)
+def mock_db_init_for_tests(monkeypatch):
+    """Evita esperas de timeout al inicializar esquemas o rate limit en entornos sin servicios activos."""
+    monkeypatch.setattr("cognitive_assistant.settings.settings.rate_limit_enabled", False)
+    with patch("cognitive_assistant.app.init_db_schema", new_callable=AsyncMock) as m:
+        m.return_value = True
+        yield
 
 
 @pytest.fixture
