@@ -20,5 +20,7 @@ class CognitiveState(TypedDict):
     metadata: Dict[str, Any]
     sensitive_data_filtered: Optional[bool]
     filter_reason: Optional[str]
+    pending_tool_calls: Optional[List[Dict[str, Any]]]
+    tool_results: Optional[List[Dict[str, Any]]]
 
 
