@@ -50,3 +50,8 @@ asyncio_default_fixture_loop_scope = "function"
 target-version = "py312"
 line-length = 100
 src = ["src", "tests"]
+
+[dependency-groups]
+dev = [
+    "fakeredis>=2.39.0",
+]

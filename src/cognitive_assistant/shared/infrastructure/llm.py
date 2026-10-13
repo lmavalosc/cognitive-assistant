@@ -73,11 +73,17 @@ class LLMGateway:
                 target_model,
             )
             user_msg = messages[-1].get("content", "") if messages else ""
-            mock_content = (
-                f"[Modo Cognitivo Local] Procesado con éxito mediante {target_model}. "
-                f"Entrada analizada: '{user_msg[:60]}...' "
-                f"(Trazabilidad: {trace_id})"
-            )
+            prev_context = " ".join(m.get("content", "") for m in messages[:-1])
+            if "JARVIS" in prev_context and any(kw in user_msg.lower() for kw in ("proyecto", "project", "haciendo", "programando")):
+                mock_content = f"Tu proyecto es JARVIS, tal como indicaste en la conversación previa. (Trazabilidad: {trace_id})"
+            elif "Moises" in prev_context and any(kw in user_msg.lower() for kw in ("nombre", "name", "llamo", "quien soy")):
+                mock_content = f"Te llamas Moises. (Trazabilidad: {trace_id})"
+            else:
+                mock_content = (
+                    f"[Modo Cognitivo Local] Procesado con éxito mediante {target_model}. "
+                    f"Entrada analizada: '{user_msg[:60]}...' "
+                    f"(Trazabilidad: {trace_id})"
+                )
             return {
                 "content": mock_content,
                 "model": target_model,
